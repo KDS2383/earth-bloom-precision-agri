@@ -1,13 +1,38 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+
+import { Layout } from "@/components/layout/Layout";
+import { HeroSection } from "@/components/home/HeroSection";
+import { FeaturesSection } from "@/components/home/FeaturesSection";
+import { TestimonialsSection } from "@/components/home/TestimonialsSection";
+import { InfoGraphic } from "@/components/home/InfoGraphic";
+import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 
 const Index = () => {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-gray-600">Start building your amazing project here!</p>
-      </div>
-    </div>
+    <Layout>
+      <HeroSection />
+      <div className="section-divider" />
+      
+      <FeaturesSection />
+      
+      <TestimonialsSection />
+      
+      <InfoGraphic />
+      
+      <section className="py-20 bg-farm-primary text-white">
+        <div className="container text-center">
+          <h2 className="text-3xl md:text-4xl font-bold mb-6">
+            Ready to Optimize Your Farm?
+          </h2>
+          <p className="text-lg opacity-90 mb-8 max-w-2xl mx-auto">
+            Get personalized crop recommendations based on your unique farming conditions.
+          </p>
+          <Button size="lg" className="bg-farm-accent hover:bg-farm-accent/90 text-farm-dark font-medium" asChild>
+            <Link to="/recommendation">Get Started Now</Link>
+          </Button>
+        </div>
+      </section>
+    </Layout>
   );
 };
 
