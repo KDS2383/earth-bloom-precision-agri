@@ -100,11 +100,6 @@ const Recommendation = () => {
     // In a real app, this would send data to your API
     console.log("Form submitted:", { ...formData, pastCrops: selectedCrops });
     
-    toast({
-      title: "Form Submitted",
-      description: "Generating your recommendations...",
-    });
-    
     // Navigate to results page
     navigate("/results");
   };
