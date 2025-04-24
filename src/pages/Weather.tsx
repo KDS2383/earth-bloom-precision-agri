@@ -1,77 +1,80 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Layout } from "@/components/layout/Layout";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
+import { LocationInput } from "@/components/location/LocationInput";
+import { Button } from "@/components/ui/button";
+
+// Mock data for demonstration
+const weatherData = {
+  location: "Midwest Region, USA",
+  current: {
+    temperature: 22,
+    condition: "Partly Cloudy",
+    humidity: 65,
+    wind: {
+      speed: 12,
+      direction: "NW"
+    },
+    precipitation: 0,
+    uv: 5
+  },
+  forecast: [
+    { day: "Today", high: 24, low: 18, condition: "Partly Cloudy", precipitation: 10 },
+    { day: "Tomorrow", high: 26, low: 19, condition: "Sunny", precipitation: 0 },
+    { day: "Wednesday", high: 25, low: 17, condition: "Partly Cloudy", precipitation: 20 },
+    { day: "Thursday", high: 22, low: 16, condition: "Rain Showers", precipitation: 60 },
+    { day: "Friday", high: 21, low: 15, condition: "Rain", precipitation: 80 },
+    { day: "Saturday", high: 20, low: 14, condition: "Rain Showers", precipitation: 40 },
+    { day: "Sunday", high: 23, low: 15, condition: "Partly Cloudy", precipitation: 20 }
+  ],
+  seasonal: {
+    temperature: {
+      spring: { avg: 15, min: 5, max: 25 },
+      summer: { avg: 28, min: 18, max: 38 },
+      fall: { avg: 18, min: 8, max: 28 },
+      winter: { avg: 2, min: -8, max: 12 }
+    },
+    rainfall: {
+      spring: 250,
+      summer: 350,
+      fall: 200,
+      winter: 150
+    }
+  },
+  agriculturalMetrics: {
+    growingDegreeDays: 1250,
+    chillHours: 850,
+    frostRiskDays: 5,
+    soilTemperature: 18
+  }
+};
 
 const Weather = () => {
-  const [location, setLocation] = useState("");
+  const [displayLocation, setDisplayLocation] = useState("");
   const [isSearched, setIsSearched] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [coordinates, setCoordinates] = useState<{lat: number, lng: number} | null>(null);
+  const [usingCurrentLocation, setUsingCurrentLocation] = useState(false);
   const { toast } = useToast();
 
-  // Mock data for demonstration
-  const weatherData = {
-    location: "Midwest Region, USA",
-    current: {
-      temperature: 22,
-      condition: "Partly Cloudy",
-      humidity: 65,
-      wind: {
-        speed: 12,
-        direction: "NW"
-      },
-      precipitation: 0,
-      uv: 5
-    },
-    forecast: [
-      { day: "Today", high: 24, low: 18, condition: "Partly Cloudy", precipitation: 10 },
-      { day: "Tomorrow", high: 26, low: 19, condition: "Sunny", precipitation: 0 },
-      { day: "Wednesday", high: 25, low: 17, condition: "Partly Cloudy", precipitation: 20 },
-      { day: "Thursday", high: 22, low: 16, condition: "Rain Showers", precipitation: 60 },
-      { day: "Friday", high: 21, low: 15, condition: "Rain", precipitation: 80 },
-      { day: "Saturday", high: 20, low: 14, condition: "Rain Showers", precipitation: 40 },
-      { day: "Sunday", high: 23, low: 15, condition: "Partly Cloudy", precipitation: 20 }
-    ],
-    seasonal: {
-      temperature: {
-        spring: { avg: 15, min: 5, max: 25 },
-        summer: { avg: 28, min: 18, max: 38 },
-        fall: { avg: 18, min: 8, max: 28 },
-        winter: { avg: 2, min: -8, max: 12 }
-      },
-      rainfall: {
-        spring: 250,
-        summer: 350,
-        fall: 200,
-        winter: 150
-      }
-    },
-    agriculturalMetrics: {
-      growingDegreeDays: 1250,
-      chillHours: 850,
-      frostRiskDays: 5,
-      soilTemperature: 18
-    }
+  const handleLocationSelect = (location: string, coords: {lat: number, lng: number}) => {
+    setDisplayLocation(location);
+    setCoordinates(coords);
+    setUsingCurrentLocation(false);
+    handleSearch();
   };
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleCurrentLocation = (coords: {lat: number, lng: number}, location: string) => {
+    setCoordinates(coords);
+    setDisplayLocation(location);
+    setUsingCurrentLocation(true);
+    handleSearch();
+  };
+
+  const handleSearch = () => {
     setIsLoading(true);
-    
-    if (!location.trim()) {
-      toast({
-        title: "Location required",
-        description: "Please enter a location to search",
-        variant: "destructive",
-      });
-      setIsLoading(false);
-      return;
-    }
     
     // Simulate API call delay
     setTimeout(() => {
@@ -79,7 +82,7 @@ const Weather = () => {
       setIsSearched(true);
       toast({
         title: "Weather Data Retrieved",
-        description: `Weather information for ${location} has been loaded`,
+        description: `Weather information for ${displayLocation} has been loaded`,
       });
     }, 1500);
   };
@@ -108,7 +111,7 @@ const Weather = () => {
             <path d="m4.93 4.93 1.41 1.41"></path>
             <path d="m17.66 17.66 1.41 1.41"></path>
             <path d="M2 12h2"></path>
-            <path d="M6.34 17.66l-1.41 1.41"></path>
+            <path d="m6.34 17.66l-1.41 1.41"></path>
             <path d="M22 12h-2"></path>
             <path d="M19.07 4.93l-1.41 1.41"></path>
             <path d="M10.26 5.77A7 7 0 0 0 5.76 10.26"></path>
@@ -162,31 +165,17 @@ const Weather = () => {
               <CardHeader>
                 <CardTitle>Check Weather Conditions</CardTitle>
                 <CardDescription>
-                  Enter a location to get current weather and forecast information
+                  Enter a location in India to get current weather and forecast information
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <form onSubmit={handleSearch} className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div className="space-y-2 md:col-span-3">
-                      <Label htmlFor="location">Location</Label>
-                      <Input
-                        id="location"
-                        placeholder="Enter city, region, or farm location"
-                        value={location}
-                        onChange={(e) => setLocation(e.target.value)}
-                      />
-                    </div>
-                    <div className="flex items-end">
-                      <Button 
-                        type="submit" 
-                        className="w-full bg-farm-primary hover:bg-farm-dark"
-                        disabled={isLoading}
-                      >
-                        {isLoading ? "Searching..." : "Check Weather"}
-                      </Button>
-                    </div>
-                  </div>
+                <form onSubmit={(e) => { e.preventDefault(); handleSearch(); }} className="space-y-4">
+                  <LocationInput
+                    onLocationSelect={handleLocationSelect}
+                    onCurrentLocation={handleCurrentLocation}
+                    isLoading={isLoading}
+                    usingCurrentLocation={usingCurrentLocation}
+                  />
                 </form>
               </CardContent>
             </Card>
@@ -209,7 +198,7 @@ const Weather = () => {
                   <TabsContent value="current" className="animate-fade-in">
                     <Card>
                       <CardHeader>
-                        <CardTitle>Current Weather for {weatherData.location}</CardTitle>
+                        <CardTitle>Current Weather for {displayLocation}</CardTitle>
                         <CardDescription>
                           Last updated: {new Date().toLocaleString()}
                         </CardDescription>
@@ -288,7 +277,7 @@ const Weather = () => {
                   <TabsContent value="forecast" className="animate-fade-in">
                     <Card>
                       <CardHeader>
-                        <CardTitle>7-Day Forecast for {weatherData.location}</CardTitle>
+                        <CardTitle>7-Day Forecast for {displayLocation}</CardTitle>
                         <CardDescription>
                           Plan your farming activities with our weekly forecast
                         </CardDescription>
@@ -370,7 +359,7 @@ const Weather = () => {
                   <TabsContent value="seasonal" className="animate-fade-in">
                     <Card>
                       <CardHeader>
-                        <CardTitle>Seasonal Climate Data for {weatherData.location}</CardTitle>
+                        <CardTitle>Seasonal Climate Data for {displayLocation}</CardTitle>
                         <CardDescription>
                           Plan your long-term farming strategy with seasonal patterns
                         </CardDescription>

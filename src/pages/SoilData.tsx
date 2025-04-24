@@ -1,18 +1,24 @@
-
 import { Layout } from "@/components/layout/Layout";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { useState, useEffect } from "react";
+import { useToast } from "@/hooks/use-toast";
+import { LocationInput } from "@/components/location/LocationInput";
+import { downloadReport } from "@/utils/reportGenerator";
+import { Save } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const SoilData = () => {
+  const navigate = useNavigate();
   const [location, setLocation] = useState("");
   const [isSearched, setIsSearched] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [coordinates, setCoordinates] = useState<{lat: number, lng: number} | null>({lat: 0, lng: 0});
+  const [usingCurrentLocation, setUsingCurrentLocation] = useState(false);
+  const { toast } = useToast();
 
-  // Mock data for demonstration
-  const soilData = {
+  // Mock data for demonstration - will be updated based on location
+  const [soilData, setSoilData] = useState({
     location: "Midwest Region, USA",
     soilType: "Loam",
     ph: 6.8,
@@ -31,17 +37,57 @@ const SoilData = () => {
       sulfur: 15
     },
     cec: 12.5
+  });
+  
+  // Try to get location when component mounts
+  useEffect(() => {
+    // Auto-prompt for location when the page loads
+    // handleGetCurrentLocation();
+  }, []);
+
+  const handleLocationSelect = (location: string, coords: {lat: number, lng: number}) => {
+    setLocation(location);
+    setCoordinates(coords);
+    setUsingCurrentLocation(false);
+    handleSearch();
   };
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleCurrentLocation = (coords: {lat: number, lng: number}, location: string) => {
+    setCoordinates(coords);
+    setLocation(location);
+    setUsingCurrentLocation(true);
+    handleSearch();
+  };
+
+  const handleSearch = () => {
     setIsLoading(true);
-    
+
     // Simulate API call delay
     setTimeout(() => {
       setIsLoading(false);
       setIsSearched(true);
+      setSoilData(prevData => ({
+        ...prevData,
+        location: location
+      }));
+      
+      toast({
+        title: "Soil Data Retrieved",
+        description: `Analysis complete for ${location}`,
+      });
     }, 1500);
+  };
+
+  const handleDownloadReport = () => {
+    downloadReport(soilData);
+    toast({
+      title: "Report Downloaded",
+      description: "Your soil analysis report has been downloaded.",
+    });
+  };
+
+  const handleViewResults = () => {
+    navigate('/results', { state: { soilData } });
   };
 
   return (
@@ -63,32 +109,17 @@ const SoilData = () => {
               <CardHeader>
                 <CardTitle>Find Your Soil Data</CardTitle>
                 <CardDescription>
-                  Enter a location or farm coordinates to retrieve soil information
+                  Enter a location in India to retrieve soil information
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <form onSubmit={handleSearch} className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div className="space-y-2 md:col-span-3">
-                      <Label htmlFor="location">Farm Location</Label>
-                      <Input
-                        id="location"
-                        placeholder="Enter address, city, or coordinates"
-                        value={location}
-                        onChange={(e) => setLocation(e.target.value)}
-                        required
-                      />
-                    </div>
-                    <div className="flex items-end">
-                      <Button 
-                        type="submit" 
-                        className="w-full bg-farm-primary hover:bg-farm-dark"
-                        disabled={isLoading}
-                      >
-                        {isLoading ? "Searching..." : "Search"}
-                      </Button>
-                    </div>
-                  </div>
+                <form onSubmit={(e) => { e.preventDefault(); handleSearch(); }} className="space-y-4">
+                  <LocationInput
+                    onLocationSelect={handleLocationSelect}
+                    onCurrentLocation={handleCurrentLocation}
+                    isLoading={isLoading}
+                    usingCurrentLocation={usingCurrentLocation}
+                  />
                 </form>
               </CardContent>
             </Card>
@@ -103,7 +134,7 @@ const SoilData = () => {
               <div className="space-y-8">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Soil Analysis Results</CardTitle>
+                    <CardTitle>Soil Analysis Results {usingCurrentLocation && '(Current Location)'}</CardTitle>
                     <CardDescription>
                       Data for {soilData.location}
                     </CardDescription>
@@ -115,7 +146,7 @@ const SoilData = () => {
                         <div className="grid grid-cols-2 gap-4">
                           <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-md">
                             <p className="text-sm text-gray-500">Soil Type</p>
-                            <p className="text-xl font-semibold">{soilData.soilType}</p>
+                            <p className="text-xl font-semibold truncate" title={soilData.soilType}>{soilData.soilType}</p>
                           </div>
                           <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-md">
                             <p className="text-sm text-gray-500">pH Level</p>
@@ -130,7 +161,7 @@ const SoilData = () => {
                           </div>
                           <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-md">
                             <p className="text-sm text-gray-500">CEC</p>
-                            <p className="text-xl font-semibold">{soilData.cec} meq/100g</p>
+                            <p className="text-xl font-semibold truncate" title={`${soilData.cec} meq/100g`}>{soilData.cec} meq/100g</p>
                             <p className="text-xs mt-1">Cation Exchange Capacity</p>
                           </div>
                         </div>
@@ -139,34 +170,34 @@ const SoilData = () => {
                         <div className="bg-white p-4 rounded-md border">
                           <div className="mb-2 flex justify-between">
                             <span className="text-sm font-medium">Sand</span>
-                            <span className="text-sm">{soilData.texture.sand}%</span>
+                            <span className="text-sm tabular-nums">{soilData.texture.sand}%</span>
                           </div>
                           <div className="w-full bg-gray-200 rounded-full h-2.5 mb-4">
                             <div 
                               className="bg-yellow-400 h-2.5 rounded-full" 
-                              style={{ width: `${soilData.texture.sand}%` }}
+                              style={{ width: `${Math.min(soilData.texture.sand, 100)}%` }}
                             ></div>
                           </div>
                           
                           <div className="mb-2 flex justify-between">
                             <span className="text-sm font-medium">Silt</span>
-                            <span className="text-sm">{soilData.texture.silt}%</span>
+                            <span className="text-sm tabular-nums">{soilData.texture.silt}%</span>
                           </div>
                           <div className="w-full bg-gray-200 rounded-full h-2.5 mb-4">
                             <div 
                               className="bg-farm-brown h-2.5 rounded-full" 
-                              style={{ width: `${soilData.texture.silt}%` }}
+                              style={{ width: `${Math.min(soilData.texture.silt, 100)}%` }}
                             ></div>
                           </div>
                           
                           <div className="mb-2 flex justify-between">
                             <span className="text-sm font-medium">Clay</span>
-                            <span className="text-sm">{soilData.texture.clay}%</span>
+                            <span className="text-sm tabular-nums">{soilData.texture.clay}%</span>
                           </div>
                           <div className="w-full bg-gray-200 rounded-full h-2.5">
                             <div 
                               className="bg-farm-primary h-2.5 rounded-full" 
-                              style={{ width: `${soilData.texture.clay}%` }}
+                              style={{ width: `${Math.min(soilData.texture.clay, 100)}%` }}
                             ></div>
                           </div>
                         </div>
@@ -178,12 +209,12 @@ const SoilData = () => {
                           <div>
                             <div className="flex justify-between mb-1">
                               <span className="text-sm font-medium">Nitrogen (N)</span>
-                              <span className="text-sm">{soilData.nutrients.nitrogen} ppm</span>
+                              <span className="text-sm tabular-nums">{soilData.nutrients.nitrogen} ppm</span>
                             </div>
                             <div className="w-full bg-gray-200 rounded-full h-2.5">
                               <div 
                                 className="bg-farm-primary h-2.5 rounded-full" 
-                                style={{ width: `${(soilData.nutrients.nitrogen / 100) * 100}%` }}
+                                style={{ width: `${Math.min(soilData.nutrients.nitrogen, 100)}%` }}
                               ></div>
                             </div>
                           </div>
@@ -191,12 +222,12 @@ const SoilData = () => {
                           <div>
                             <div className="flex justify-between mb-1">
                               <span className="text-sm font-medium">Phosphorus (P)</span>
-                              <span className="text-sm">{soilData.nutrients.phosphorus} ppm</span>
+                              <span className="text-sm tabular-nums">{soilData.nutrients.phosphorus} ppm</span>
                             </div>
                             <div className="w-full bg-gray-200 rounded-full h-2.5">
                               <div 
                                 className="bg-farm-secondary h-2.5 rounded-full" 
-                                style={{ width: `${(soilData.nutrients.phosphorus / 100) * 100}%` }}
+                                style={{ width: `${Math.min(soilData.nutrients.phosphorus, 100)}%` }}
                               ></div>
                             </div>
                           </div>
@@ -204,12 +235,12 @@ const SoilData = () => {
                           <div>
                             <div className="flex justify-between mb-1">
                               <span className="text-sm font-medium">Potassium (K)</span>
-                              <span className="text-sm">{soilData.nutrients.potassium} ppm</span>
+                              <span className="text-sm tabular-nums">{soilData.nutrients.potassium} ppm</span>
                             </div>
                             <div className="w-full bg-gray-200 rounded-full h-2.5">
                               <div 
                                 className="bg-farm-accent h-2.5 rounded-full" 
-                                style={{ width: `${(soilData.nutrients.potassium / 100) * 100}%` }}
+                                style={{ width: `${Math.min(soilData.nutrients.potassium, 100)}%` }}
                               ></div>
                             </div>
                           </div>
@@ -217,12 +248,12 @@ const SoilData = () => {
                           <div>
                             <div className="flex justify-between mb-1">
                               <span className="text-sm font-medium">Calcium (Ca)</span>
-                              <span className="text-sm">{soilData.nutrients.calcium} ppm</span>
+                              <span className="text-sm tabular-nums">{soilData.nutrients.calcium} ppm</span>
                             </div>
                             <div className="w-full bg-gray-200 rounded-full h-2.5">
                               <div 
                                 className="bg-blue-400 h-2.5 rounded-full" 
-                                style={{ width: `${(soilData.nutrients.calcium / 2000) * 100}%` }}
+                                style={{ width: `${Math.min((soilData.nutrients.calcium / 2000) * 100, 100)}%` }}
                               ></div>
                             </div>
                           </div>
@@ -230,12 +261,12 @@ const SoilData = () => {
                           <div>
                             <div className="flex justify-between mb-1">
                               <span className="text-sm font-medium">Magnesium (Mg)</span>
-                              <span className="text-sm">{soilData.nutrients.magnesium} ppm</span>
+                              <span className="text-sm tabular-nums">{soilData.nutrients.magnesium} ppm</span>
                             </div>
                             <div className="w-full bg-gray-200 rounded-full h-2.5">
                               <div 
                                 className="bg-purple-400 h-2.5 rounded-full" 
-                                style={{ width: `${(soilData.nutrients.magnesium / 400) * 100}%` }}
+                                style={{ width: `${Math.min((soilData.nutrients.magnesium / 400) * 100, 100)}%` }}
                               ></div>
                             </div>
                           </div>
@@ -243,12 +274,12 @@ const SoilData = () => {
                           <div>
                             <div className="flex justify-between mb-1">
                               <span className="text-sm font-medium">Sulfur (S)</span>
-                              <span className="text-sm">{soilData.nutrients.sulfur} ppm</span>
+                              <span className="text-sm tabular-nums">{soilData.nutrients.sulfur} ppm</span>
                             </div>
                             <div className="w-full bg-gray-200 rounded-full h-2.5">
                               <div 
                                 className="bg-orange-400 h-2.5 rounded-full" 
-                                style={{ width: `${(soilData.nutrients.sulfur / 30) * 100}%` }}
+                                style={{ width: `${Math.min((soilData.nutrients.sulfur / 30) * 100, 100)}%` }}
                               ></div>
                             </div>
                           </div>
@@ -257,10 +288,22 @@ const SoilData = () => {
                     </div>
                   </CardContent>
                   <CardFooter className="flex justify-between">
-                    <Button variant="outline">Download Report</Button>
-                    <Button className="bg-farm-primary hover:bg-farm-dark">
-                      Get Recommendations
+                    <Button 
+                      variant="outline"
+                      onClick={handleDownloadReport}
+                      className="flex items-center gap-2"
+                    >
+                      <Save className="h-4 w-4" />
+                      Download Report
                     </Button>
+                    <div className="space-x-2">
+                      <Button 
+                        className="bg-farm-primary hover:bg-farm-dark"
+                        onClick={handleViewResults}
+                      >
+                        View Detailed Results
+                      </Button>
+                    </div>
                   </CardFooter>
                 </Card>
                 
