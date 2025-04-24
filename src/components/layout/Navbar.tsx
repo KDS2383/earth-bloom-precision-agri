@@ -1,6 +1,5 @@
-
-import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Menu, X, User, LogOut } from 'lucide-react';
@@ -13,30 +12,44 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import logo from '@/assets/logo.svg';
-
-// This will be replaced with actual auth logic
-const FAKE_USER = {
-  isAuthenticated: false,
-  name: 'John Farmer',
-  avatar: 'https://images.unsplash.com/photo-1472396961693-142e6e269027',
-};
+import { auth } from '../../firebase'; // Firebase auth import
+import { onAuthStateChanged, signOut } from 'firebase/auth'; // Firebase auth functions
 
 export function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [user, setUser] = useState<any>(null); // Use state for user
   const location = useLocation();
-  const user = FAKE_USER; // Replace with context/redux state
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser); // Set user state based on auth state
+    });
+
+    return () => unsubscribe(); // Clean up the listener on component unmount
+  }, []);
 
   const isActive = (path: string) => {
     return location.pathname === path;
   };
 
+  // Conditionally add the "Recommendation" link if user is logged in
   const navLinks = [
     { name: 'Home', path: '/' },
-    { name: 'Recommendation', path: '/recommendation' },
+    user ? { name: 'Recommendation', path: '/recommendation' } : null, // Add "Recommendation" only if user is logged in
     { name: 'Soil Data', path: '/soil-data' },
     { name: 'Weather', path: '/weather' },
     { name: 'Contact Us', path: '/contact' },
-  ];
+  ].filter(Boolean); // Remove any null values from the array
+
+  const handleSignOut = async () => {
+    try {
+      await signOut(auth);
+      navigate('/'); // Redirect to home after signing out
+    } catch (error) {
+      console.error("Sign out error:", error);
+    }
+  };
 
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur">
@@ -67,7 +80,7 @@ export function Navbar() {
         </nav>
 
         <div className="flex items-center gap-2">
-          {user.isAuthenticated ? (
+          {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -75,9 +88,9 @@ export function Navbar() {
                   className="relative h-8 w-8 rounded-full"
                 >
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={user.avatar} alt={user.name} />
+                    <AvatarImage src={user.photoURL || 'https://via.placeholder.com/100'} alt={user.displayName} />
                     <AvatarFallback className="bg-farm-secondary text-white">
-                      {user.name
+                      {user.displayName
                         .split(' ')
                         .map((n) => n[0])
                         .join('')}
@@ -88,16 +101,16 @@ export function Navbar() {
               <DropdownMenuContent align="end" className="w-56">
                 <div className="flex items-center justify-start gap-2 p-2">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={user.avatar} alt={user.name} />
-                    <AvatarFallback className="bg-farm-secondary text-white">
-                      {user.name
+                    <AvatarImage src={user.photoURL || 'https://via.placeholder.com/100'} alt={user.displayName} />
+                    <AvatarFallback className="bg-farm-secondary text-black">
+                      {user.displayName
                         .split(' ')
                         .map((n) => n[0])
                         .join('')}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex flex-col space-y-0.5 leading-none">
-                    <p className="font-medium text-sm">{user.name}</p>
+                    <p className="font-medium text-sm text-black">{user.displayName}</p>
                     <p className="text-xs text-muted-foreground">Farmer</p>
                   </div>
                 </div>
@@ -108,7 +121,7 @@ export function Navbar() {
                     <span>Account</span>
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem className="cursor-pointer">
+                <DropdownMenuItem className="cursor-pointer" onClick={handleSignOut}>
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Log out</span>
                 </DropdownMenuItem>
@@ -159,7 +172,7 @@ export function Navbar() {
                 {link.name}
               </Link>
             ))}
-            {!user.isAuthenticated && (
+            {!user && (
               <div className="pt-2 flex flex-col space-y-2">
                 <Button variant="outline" asChild>
                   <Link to="/signin" onClick={() => setIsMenuOpen(false)}>

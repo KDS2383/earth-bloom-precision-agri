@@ -110,8 +110,9 @@ const ToastDescription = React.forwardRef<
 ))
 ToastDescription.displayName = ToastPrimitives.Description.displayName
 
-type ToastProps = React.ComponentPropsWithoutRef<typeof Toast>
-
+type ToastProps = {
+  variant: "default" | "destructive" | "info" | "success" | "error";
+};
 type ToastActionElement = React.ReactElement<typeof ToastAction>
 
 export {
