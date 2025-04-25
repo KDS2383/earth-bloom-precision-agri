@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -15,6 +14,7 @@ import SignIn from "./pages/Auth/SignIn";
 import SignUp from "./pages/Auth/SignUp";
 
 const queryClient = new QueryClient();
+import Account from "./pages/Account";
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -24,6 +24,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/account" element={<Account />} />
           <Route path="/recommendation" element={<Recommendation />} />
           <Route path="/results" element={<Results />} />
           <Route path="/soil-data" element={<SoilData />} />

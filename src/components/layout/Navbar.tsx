@@ -103,9 +103,9 @@ export function Navbar() {
                 </div>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <Link to="/profile" className="cursor-pointer flex w-full items-center">
+                  <Link to="/account" className="cursor-pointer flex w-full items-center">
                     <User className="mr-2 h-4 w-4" />
-                    <span>Account</span>
+                    <span>Account Settings</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem className="cursor-pointer">
