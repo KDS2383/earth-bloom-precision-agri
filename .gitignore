@@ -22,3 +22,12 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Local Environment Variables
+.env.local
+.env.*.local
+
+# Optional: Ignore the main .env too if you only use .env.local
+.env
+
+!.env.example
