@@ -4,14 +4,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Farm } from "lucide-react";
+import { Tractor } from "lucide-react";
 
 const FarmSection = () => {
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Farm className="h-5 w-5" />
+          <Tractor className="h-5 w-5" />
           Farm Information
         </CardTitle>
       </CardHeader>
