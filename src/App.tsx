@@ -6,7 +6,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 // Import Pages
-import { AuthProvider } from "./context/AuthContext";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Recommendation from "./pages/Recommendation";
@@ -19,20 +18,17 @@ import SignUp from "./pages/Auth/SignUp";
 import Account from "./pages/Account";
 
 // Import Auth related components
-import { AuthProvider } from "./context/AuthContext"; // *** IMPORT AuthProvider ***
-import ProtectedRoute from "./components/auth/ProtectedRoute"; // *** IMPORT ProtectedRoute ***
+import { AuthProvider } from "./context/AuthContext";
+import ProtectedRoute from "./components/auth/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      {/* *** Wrap with AuthProvider if not done in main.tsx *** */}
       <AuthProvider>
         <Toaster />
         <Sonner />
-        {/* BrowserRouter should ideally be outside AuthProvider if AuthProvider is here,
-            or inside if AuthProvider is in main.tsx. Let's keep it simple for now. */}
         <BrowserRouter>
           <Routes>
             {/* Public Routes */}
@@ -89,8 +85,8 @@ const App = () => (
         </BrowserRouter>
       </AuthProvider>
     </TooltipProvider>
-
   </QueryClientProvider>
 );
 
 export default App;
+
