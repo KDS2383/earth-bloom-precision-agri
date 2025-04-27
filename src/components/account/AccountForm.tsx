@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import ProfileSection from './ProfileSection';
 import LocationSection from './LocationSection';
 import FarmSection from './FarmSection';
@@ -9,14 +9,20 @@ import { useToast } from '@/hooks/use-toast';
 
 const AccountForm = () => {
   const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement save functionality
-    toast({
-      title: "Success",
-      description: "Your account settings have been updated.",
-    });
+    setIsSubmitting(true);
+    
+    // Simulate API call
+    setTimeout(() => {
+      setIsSubmitting(false);
+      toast({
+        title: "Success",
+        description: "Your account settings have been updated.",
+      });
+    }, 1000);
   };
 
   return (
@@ -27,8 +33,8 @@ const AccountForm = () => {
       <PreferencesSection />
       
       <div className="flex justify-end">
-        <Button type="submit" size="lg">
-          Save Changes
+        <Button type="submit" size="lg" disabled={isSubmitting}>
+          {isSubmitting ? "Saving..." : "Save All Changes"}
         </Button>
       </div>
     </form>
