@@ -1,6 +1,6 @@
 
-import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Menu, X, User, LogOut } from 'lucide-react';
@@ -13,18 +13,39 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import logo from '@/assets/logo2.png';
-
-// This will be replaced with actual auth logic
-const FAKE_USER = {
-  isAuthenticated: false,
-  name: 'John Farmer',
-  avatar: 'https://images.unsplash.com/photo-1472396961693-142e6e269027',
-};
+import { useAuth } from '@/context/AuthContext';
+import { auth } from '@/firebase';
+import { signOut } from 'firebase/auth';
+import { useToast } from '@/hooks/use-toast';
 
 export function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
-  const user = FAKE_USER; // Replace with context/redux state
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { toast } = useToast();
+  
+  // Debug log to see if user state is updating
+  useEffect(() => {
+    console.log("Navbar rendered, user state:", user ? "Logged in" : "Not logged in");
+  }, [user]);
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      toast({
+        title: "Logged out successfully",
+        description: "You have been logged out of your account",
+      });
+      navigate('/');
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to log out",
+        variant: "destructive",
+      });
+    }
+  };
 
   const isActive = (path: string) => {
     return location.pathname === path;
@@ -57,8 +78,8 @@ export function Navbar() {
               key={link.name}
               to={link.path}
               className={cn(
-                'nav-link',
-                isActive(link.path) && 'nav-link-active'
+                'px-4 py-2 text-sm font-medium transition-colors hover:text-farm-primary',
+                isActive(link.path) && 'text-farm-primary font-semibold'
               )}
             >
               {link.name}
@@ -67,7 +88,7 @@ export function Navbar() {
         </nav>
 
         <div className="flex items-center gap-2">
-          {user.isAuthenticated ? (
+          {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -75,12 +96,11 @@ export function Navbar() {
                   className="relative h-8 w-8 rounded-full"
                 >
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={user.avatar} alt={user.name} />
+                    <AvatarImage src={user.photoURL || undefined} alt={user.displayName || 'User'} />
                     <AvatarFallback className="bg-farm-secondary text-white">
-                      {user.name
-                        .split(' ')
-                        .map((n) => n[0])
-                        .join('')}
+                      {user.displayName
+                        ? user.displayName.split(' ').map((n) => n[0]).join('')
+                        : user.email?.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                 </Button>
@@ -88,16 +108,17 @@ export function Navbar() {
               <DropdownMenuContent align="end" className="w-56">
                 <div className="flex items-center justify-start gap-2 p-2">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={user.avatar} alt={user.name} />
+                    <AvatarImage src={user.photoURL || undefined} alt={user.displayName || 'User'} />
                     <AvatarFallback className="bg-farm-secondary text-white">
-                      {user.name
-                        .split(' ')
-                        .map((n) => n[0])
-                        .join('')}
+                      {user.displayName
+                        ? user.displayName.split(' ').map((n) => n[0]).join('')
+                        : user.email?.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex flex-col space-y-0.5 leading-none">
-                    <p className="font-medium text-sm">{user.name}</p>
+                    <p className="font-medium text-sm">
+                      {user.displayName || user.email}
+                    </p>
                     <p className="text-xs text-muted-foreground">Farmer</p>
                   </div>
                 </div>
@@ -108,7 +129,7 @@ export function Navbar() {
                     <span>Account Settings</span>
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem className="cursor-pointer">
+                <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Log out</span>
                 </DropdownMenuItem>
@@ -159,7 +180,7 @@ export function Navbar() {
                 {link.name}
               </Link>
             ))}
-            {!user.isAuthenticated && (
+            {!user && (
               <div className="pt-2 flex flex-col space-y-2">
                 <Button variant="outline" asChild>
                   <Link to="/signin" onClick={() => setIsMenuOpen(false)}>
