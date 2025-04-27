@@ -19,7 +19,7 @@ const SoilData = () => {
 
   // Mock data for demonstration - will be updated based on location
   const [soilData, setSoilData] = useState({
-    location: "Midwest Region, USA",
+    location: "Maharashtra, India",
     soilType: "Loam",
     ph: 6.8,
     texture: {
@@ -73,7 +73,7 @@ const SoilData = () => {
       
       toast({
         title: "Soil Data Retrieved",
-        description: `Analysis complete for ${location}`,
+        description: `Analysis complete for Maharashtra, India`,
       });
     }, 1500);
   };
@@ -136,7 +136,7 @@ const SoilData = () => {
                   <CardHeader>
                     <CardTitle>Soil Analysis Results {usingCurrentLocation && '(Current Location)'}</CardTitle>
                     <CardDescription>
-                      Data for {soilData.location}
+                      Data for {location}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
