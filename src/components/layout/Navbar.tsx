@@ -59,6 +59,11 @@ export function Navbar() {
     { name: 'Contact Us', path: '/contact' },
   ];
 
+  // Function to get user display name or email
+  const getUserDisplayName = () => {
+    return user?.displayName || user?.email?.split('@')[0] || 'User';
+  };
+
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur">
       <div className="container flex h-16 items-center justify-between">
@@ -93,7 +98,7 @@ export function Navbar() {
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
-                  className="relative h-8 w-8 rounded-full"
+                  className="relative h-10 w-auto rounded-full flex items-center gap-2"
                 >
                   <Avatar className="h-8 w-8">
                     <AvatarImage src={user.photoURL || undefined} alt={user.displayName || 'User'} />
@@ -103,6 +108,7 @@ export function Navbar() {
                         : user.email?.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
+                  <span className="text-sm font-medium">{getUserDisplayName()}</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
@@ -117,7 +123,7 @@ export function Navbar() {
                   </Avatar>
                   <div className="flex flex-col space-y-0.5 leading-none">
                     <p className="font-medium text-sm">
-                      {user.displayName || user.email}
+                      {getUserDisplayName()}
                     </p>
                     <p className="text-xs text-muted-foreground">Farmer</p>
                   </div>
