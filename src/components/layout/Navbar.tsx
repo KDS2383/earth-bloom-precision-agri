@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -24,6 +24,11 @@ export function Navbar() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
+  
+  // Debug log to see if user state is updating
+  useEffect(() => {
+    console.log("Navbar rendered, user state:", user ? "Logged in" : "Not logged in");
+  }, [user]);
 
   const handleLogout = async () => {
     try {
@@ -73,8 +78,8 @@ export function Navbar() {
               key={link.name}
               to={link.path}
               className={cn(
-                'nav-link',
-                isActive(link.path) && 'nav-link-active'
+                'px-4 py-2 text-sm font-medium transition-colors hover:text-farm-primary',
+                isActive(link.path) && 'text-farm-primary font-semibold'
               )}
             >
               {link.name}
