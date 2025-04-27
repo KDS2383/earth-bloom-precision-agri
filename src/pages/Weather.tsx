@@ -1,151 +1,110 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useToast } from "@/hooks/use-toast";
+// import { useToast } from "@/hooks/use-toast"; // Keep if used elsewhere, remove if not
 import { LocationInput } from "@/components/location/LocationInput";
-import { Button } from "@/components/ui/button";
+import { useWeatherData } from "@/utils/weatherApi"; // Import the updated hook
+// Removed unused icon imports (ThermometerSun, etc.) - using SVGs below
+// Import Button if needed, removed if not
+// import { Button } from "@/components/ui/button";
 
-// Mock data for demonstration
-const weatherData = {
-  location: "Midwest Region, USA",
-  current: {
-    temperature: 22,
-    condition: "Partly Cloudy",
-    humidity: 65,
-    wind: {
-      speed: 12,
-      direction: "NW"
-    },
-    precipitation: 0,
-    uv: 5
-  },
-  forecast: [
-    { day: "Today", high: 24, low: 18, condition: "Partly Cloudy", precipitation: 10 },
-    { day: "Tomorrow", high: 26, low: 19, condition: "Sunny", precipitation: 0 },
-    { day: "Wednesday", high: 25, low: 17, condition: "Partly Cloudy", precipitation: 20 },
-    { day: "Thursday", high: 22, low: 16, condition: "Rain Showers", precipitation: 60 },
-    { day: "Friday", high: 21, low: 15, condition: "Rain", precipitation: 80 },
-    { day: "Saturday", high: 20, low: 14, condition: "Rain Showers", precipitation: 40 },
-    { day: "Sunday", high: 23, low: 15, condition: "Partly Cloudy", precipitation: 20 }
-  ],
-  seasonal: {
-    temperature: {
-      spring: { avg: 15, min: 5, max: 25 },
-      summer: { avg: 28, min: 18, max: 38 },
-      fall: { avg: 18, min: 8, max: 28 },
-      winter: { avg: 2, min: -8, max: 12 }
-    },
-    rainfall: {
-      spring: 250,
-      summer: 350,
-      fall: 200,
-      winter: 150
-    }
-  },
-  agriculturalMetrics: {
-    growingDegreeDays: 1250,
-    chillHours: 850,
-    frostRiskDays: 5,
-    soilTemperature: 18
-  }
-};
+// REMOVE MOCK DATA - const weatherData = { ... };
 
 const Weather = () => {
   const [displayLocation, setDisplayLocation] = useState("");
-  const [isSearched, setIsSearched] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [coordinates, setCoordinates] = useState<{lat: number, lng: number} | null>(null);
   const [usingCurrentLocation, setUsingCurrentLocation] = useState(false);
-  const { toast } = useToast();
+  const [isLoadingLocation, setIsLoadingLocation] = useState(false); // Renamed from isLoading for clarity
+  // const { toast } = useToast(); // Keep if used
+
+  // Use the hook to fetch real data
+  const { data: apiWeatherData, isLoading: isWeatherLoading, isError } = useWeatherData(
+    coordinates?.lat ?? null,
+    coordinates?.lng ?? null // OWM uses 'lon' but our state uses 'lng'
+  );
 
   const handleLocationSelect = (location: string, coords: {lat: number, lng: number}) => {
     setDisplayLocation(location);
     setCoordinates(coords);
     setUsingCurrentLocation(false);
-    handleSearch();
   };
 
   const handleCurrentLocation = (coords: {lat: number, lng: number}, location: string) => {
     setCoordinates(coords);
-    setDisplayLocation(location);
+    setDisplayLocation(location || "Current Location"); // Use provided name or fallback
     setUsingCurrentLocation(true);
-    handleSearch();
   };
 
-  const handleSearch = () => {
-    setIsLoading(true);
-    
-    // Simulate API call delay
-    setTimeout(() => {
-      setIsLoading(false);
-      setIsSearched(true);
-      toast({
-        title: "Weather Data Retrieved",
-        description: `Weather information for ${displayLocation} has been loaded`,
-      });
-    }, 1500);
-  };
+  // --- Updated getWeatherIcon ---
+  // Takes the 'main' condition string from OpenWeatherMap (e.g., "Clear", "Clouds", "Rain")
+  // Or alternatively, could take the icon code (e.g., "01d") and return an <img> tag
+  const getWeatherIcon = (condition: string, description?: string) => {
+    const lowerCaseCondition = condition.toLowerCase();
+    const lowerCaseDescription = description?.toLowerCase();
 
-  const getWeatherIcon = (condition: string) => {
-    switch (condition.toLowerCase()) {
-      case "sunny":
+    switch (lowerCaseCondition) {
+      case "clear":
         return (
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-8 w-8 text-yellow-500">
-            <circle cx="12" cy="12" r="4"></circle>
-            <path d="M12 2v2"></path>
-            <path d="M12 20v2"></path>
-            <path d="m4.93 4.93 1.41 1.41"></path>
-            <path d="m17.66 17.66 1.41 1.41"></path>
-            <path d="M2 12h2"></path>
-            <path d="M20 12h2"></path>
-            <path d="m6.34 17.66-1.41 1.41"></path>
-            <path d="m19.07 4.93-1.41 1.41"></path>
+            {/* Sunny Icon SVG */}
+            <circle cx="12" cy="12" r="4"></circle> <path d="M12 2v2"></path> <path d="M12 20v2"></path> <path d="m4.93 4.93 1.41 1.41"></path> <path d="m17.66 17.66 1.41 1.41"></path> <path d="M2 12h2"></path> <path d="M20 12h2"></path> <path d="m6.34 17.66-1.41 1.41"></path> <path d="m19.07 4.93-1.41 1.41"></path>
           </svg>
         );
-      case "partly cloudy":
-        return (
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-8 w-8 text-blue-400">
-            <path d="M12 2v2"></path>
-            <path d="M12 8v2"></path>
-            <path d="m4.93 4.93 1.41 1.41"></path>
-            <path d="m17.66 17.66 1.41 1.41"></path>
-            <path d="M2 12h2"></path>
-            <path d="m6.34 17.66l-1.41 1.41"></path>
-            <path d="M22 12h-2"></path>
-            <path d="M19.07 4.93l-1.41 1.41"></path>
-            <path d="M10.26 5.77A7 7 0 0 0 5.76 10.26"></path>
-            <path d="M16 14a5 5 0 1 0-5.59-7.5"></path>
-            <path d="M8 16a5 5 0 1 0 7.5-5.6"></path>
+      case "clouds":
+        if (lowerCaseDescription?.includes("few") || lowerCaseDescription?.includes("scattered")) {
+          return ( // Partly Cloudy Icon
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-8 w-8 text-blue-400">
+              {/* Partly Cloudy Icon SVG */}
+              <path d="M12 2v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="M20 12h2"></path><path d="m19.07 4.93-1.41 1.41"></path><path d="M17.5 20.5a8.49 8.49 0 0 1-4.6-1.3"></path><path d="M16 14a5 5 0 1 0-5.59-7.5"></path><path d="M15.9 6.09A4.5 4.5 0 0 0 17.5 15h.5a2.5 2.5 0 1 1 0 5h-11a5 5 0 0 1-1.5-9.78"></path>
+            </svg>
+          );
+        }
+        return ( // Cloudy Icon
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-8 w-8 text-gray-400">
+            {/* Cloudy Icon SVG */}
+             <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"></path>
           </svg>
         );
-      case "rain showers":
       case "rain":
+      case "drizzle":
+      case "thunderstorm": // Grouping thunderstorm with rain for icon simplicity
         return (
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-8 w-8 text-blue-500">
-            <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"></path>
-            <path d="M8 19v1"></path>
-            <path d="M8 14v1"></path>
-            <path d="M16 19v1"></path>
-            <path d="M16 14v1"></path>
-            <path d="M12 21v1"></path>
-            <path d="M12 16v1"></path>
+            {/* Rain Icon SVG */}
+            <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"></path> <path d="M8 19v1"></path> <path d="M8 14v1"></path> <path d="M16 19v1"></path> <path d="M16 14v1"></path> <path d="M12 21v1"></path> <path d="M12 16v1"></path>
           </svg>
         );
-      case "cloudy":
+       case "snow":
+         return ( // Add a simple snowflake or use cloudy/default
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-8 w-8 text-blue-300"><path d="M20 7.5a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0 0 1h.5v.5a.5.5 0 0 0 .5.5z"/><path d="M16 10a.5.5 0 0 0 .5-.5V9a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0 0 1h.5v.5a.5.5 0 0 0 .5.5z"/><path d="M12 12.5a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0 0 1h.5v.5a.5.5 0 0 0 .5.5z"/><path d="M8.5 15a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1z"/><path d="M4 17.5a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0 0 1h.5v.5a.5.5 0 0 0 .5.5z"/><path d="M4 7.5a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 0 1H4v.5A.5.5 0 0 1 4 7.5z"/><path d="M7.5 10a.5.5 0 0 1-.5-.5V9a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 0 1h-.5v.5a.5.5 0 0 1-.5.5z"/><path d="M11.5 12.5a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 0 1h-.5v.5a.5.5 0 0 1-.5.5z"/><path d="M15 15a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1z"/><path d="M19.5 17.5a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 0 1h-.5v.5a.5.5 0 0 1-.5.5z"/><path d="m4.93 4.93-.71-.71a.5.5 0 0 0-.71 0l-.71.71a.5.5 0 0 0 0 .71l.71.71a.5.5 0 0 0 .71 0l.71-.71a.5.5 0 0 0 0-.71z"/><path d="m11 4.22-.5.86a.5.5 0 0 0 .43.75h1.14a.5.5 0 0 0 .43-.75l-.5-.86a.5.5 0 0 0-.86 0z"/><path d="m19.07 4.93-.71.71a.5.5 0 0 1-.71 0l-.71-.71a.5.5 0 0 1 0-.71l.71-.71a.5.5 0 0 1 .71 0l.71.71a.5.5 0 0 1 0 .71z"/><path d="M21.78 11l-.87.5a.5.5 0 0 1-.75-.43V9.93a.5.5 0 0 1 .75-.43l.87.5a.5.5 0 0 1 0 .86z"/><path d="m19.07 19.07-.71.71a.5.5 0 0 1-.71 0l-.71-.71a.5.5 0 0 1 0-.71l.71-.71a.5.5 0 0 1 .71 0l.71.71a.5.5 0 0 1 0 .71z"/><path d="m13 19.78-.5.86a.5.5 0 0 1-.86 0l-.5-.86a.5.5 0 0 1 .43-.75h1.14a.5.5 0 0 1 .43.75z"/><path d="m4.93 19.07-.71-.71a.5.5 0 0 0-.71 0l-.71.71a.5.5 0 0 0 0 .71l.71.71a.5.5 0 0 0 .71 0l.71-.71a.5.5 0 0 0 0-.71z"/><path d="m2.22 13 .87-.5a.5.5 0 0 1 .75.43v1.14a.5.5 0 0 1-.75.43l-.87-.5a.5.5 0 0 1 0-.86z"/></svg>
+         );
+      case "mist":
+      case "smoke":
+      case "haze":
+      case "dust":
+      case "fog":
+      case "sand":
+      case "ash":
+      case "squall":
+      case "tornado":
+      default: // Default to cloudy/generic icon
         return (
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-8 w-8 text-gray-400">
-            <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"></path>
-          </svg>
-        );
-      default:
-        return (
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-8 w-8 text-gray-400">
-            <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"></path>
+             <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"></path>
           </svg>
         );
     }
   };
+
+  // --- Helper to get UV index description ---
+  const getUvDescription = (uv: number): string => {
+     if (uv < 3) return "Low";
+     if (uv < 6) return "Moderate";
+     if (uv < 8) return "High";
+     if (uv < 11) return "Very High";
+     return "Extreme";
+  }
 
   return (
     <Layout>
@@ -156,321 +115,159 @@ const Weather = () => {
               Weather Forecast & Analysis
             </h1>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Access real-time weather data and seasonal forecasts to make informed farming decisions
+              Access real-time weather data and forecasts for your location in India
             </p>
           </div>
-          
+
           <div className="max-w-4xl mx-auto">
             <Card className="mb-8">
               <CardHeader>
                 <CardTitle>Check Weather Conditions</CardTitle>
                 <CardDescription>
-                  Enter a location in India to get current weather and forecast information
+                  Enter a location or use your current location to get weather information
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <form onSubmit={(e) => { e.preventDefault(); handleSearch(); }} className="space-y-4">
+                <form onSubmit={(e) => { e.preventDefault(); }} className="space-y-4">
                   <LocationInput
                     onLocationSelect={handleLocationSelect}
                     onCurrentLocation={handleCurrentLocation}
-                    isLoading={isLoading}
+                    isLoading={isLoadingLocation} // Pass location loading state
+                    //setIsLoading={setIsLoadingLocation} // Allow LocationInput to set loading state
                     usingCurrentLocation={usingCurrentLocation}
                   />
+                  {/* Optional: Add explicit submit button if needed */}
                 </form>
               </CardContent>
             </Card>
-            
-            {isLoading && (
+
+            {(isWeatherLoading || isLoadingLocation) && ( // Show spinner if fetching weather OR location
               <div className="flex justify-center py-12">
                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-farm-primary"></div>
               </div>
             )}
-            
-            {isSearched && !isLoading && (
+
+            {isError && !isWeatherLoading && ( // Show error only if weather fetch failed
+              <Card className="text-center py-8 bg-red-50 border border-red-200">
+                <CardContent>
+                  <p className="text-red-600 font-medium">Failed to fetch weather data.</p>
+                  <p className="text-red-500 text-sm mt-1">Please check your connection or try a different location.</p>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Use apiWeatherData from the hook */}
+            {apiWeatherData && !isWeatherLoading && !isError && (
               <div className="space-y-8">
                 <Tabs defaultValue="current">
-                  <TabsList className="w-full grid grid-cols-1 sm:grid-cols-3 mb-6">
+                  <TabsList className="w-full grid grid-cols-1 sm:grid-cols-2 mb-6">
                     <TabsTrigger value="current">Current Weather</TabsTrigger>
-                    <TabsTrigger value="forecast">Forecast</TabsTrigger>
-                    <TabsTrigger value="seasonal">Seasonal Data</TabsTrigger>
+                    <TabsTrigger value="forecast">7-Day Forecast</TabsTrigger>
                   </TabsList>
-                  
+
+                  {/* Current Weather Tab */}
                   <TabsContent value="current" className="animate-fade-in">
                     <Card>
                       <CardHeader>
-                        <CardTitle>Current Weather for {displayLocation}</CardTitle>
+                        <CardTitle>Current Weather for {displayLocation || apiWeatherData.locationName}</CardTitle>
                         <CardDescription>
-                          Last updated: {new Date().toLocaleString()}
+                          {/* Format the timestamp from the API */}
+                          Last updated: {new Date(apiWeatherData.current.dt * 1000).toLocaleString()}
                         </CardDescription>
                       </CardHeader>
                       <CardContent>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                          <div className="bg-white rounded-lg p-6 flex items-center">
+                          {/* Main Temp & Condition */}
+                          <div className="bg-white rounded-lg p-6 flex items-center border">
                             <div className="mr-6">
-                              {getWeatherIcon(weatherData.current.condition)}
+                              {getWeatherIcon(apiWeatherData.current.condition, apiWeatherData.current.conditionDescription)}
                             </div>
                             <div>
-                              <h3 className="text-4xl font-bold mb-1">{weatherData.current.temperature}°C</h3>
-                              <p className="text-gray-600">{weatherData.current.condition}</p>
+                              <h3 className="text-4xl font-bold mb-1">{apiWeatherData.current.temperature}°C</h3>
+                              <p className="text-gray-600 capitalize">{apiWeatherData.current.conditionDescription}</p>
                             </div>
                           </div>
-                          
+
+                          {/* Other Details */}
                           <div className="grid grid-cols-2 gap-4">
                             <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-md">
                               <p className="text-sm text-gray-500">Humidity</p>
-                              <p className="text-2xl font-semibold">{weatherData.current.humidity}%</p>
+                              <p className="text-2xl font-semibold">{apiWeatherData.current.humidity}%</p>
                             </div>
                             <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-md">
                               <p className="text-sm text-gray-500">Wind</p>
                               <p className="text-2xl font-semibold">
-                                {weatherData.current.wind.speed} km/h
+                                {apiWeatherData.current.wind.speed} km/h
                               </p>
-                              <p className="text-xs mt-1">Direction: {weatherData.current.wind.direction}</p>
+                              <p className="text-xs mt-1">Direction: {apiWeatherData.current.wind.direction}</p>
                             </div>
                             <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-md">
-                              <p className="text-sm text-gray-500">Precipitation</p>
-                              <p className="text-2xl font-semibold">{weatherData.current.precipitation} mm</p>
+                              <p className="text-sm text-gray-500">Precipitation (1h)</p>
+                              <p className="text-2xl font-semibold">{apiWeatherData.current.precipitation.toFixed(1)} mm</p>
                             </div>
                             <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-md">
-                              <p className="text-sm text-gray-500">UV Index</p>
-                              <p className="text-2xl font-semibold">{weatherData.current.uv}</p>
-                              <p className="text-xs mt-1">
-                                {weatherData.current.uv < 3 ? "Low" : weatherData.current.uv < 6 ? "Moderate" : "High"}
-                              </p>
-                            </div>
+    <p className="text-sm text-gray-500">UV Index</p>
+    {/* Check if UV is 'N/A' */}
+    {apiWeatherData.current.uv === 'N/A' ? (
+         <p className="text-2xl font-semibold text-gray-500">N/A</p>
+    ) : (
+        <>
+            <p className="text-2xl font-semibold">{apiWeatherData.current.uv}</p>
+            {/* You might need to adjust getUvDescription if uv is not a number */}
+            {/* <p className="text-xs mt-1">{getUvDescription(apiWeatherData.current.uv)}</p> */}
+        </>
+    )}
+</div>
+                           
                           </div>
                         </div>
-                        
-                        <div className="mt-8">
-                          <h3 className="font-semibold text-lg mb-4">Agricultural Weather Metrics</h3>
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <div className="bg-farm-light p-4 rounded-md">
-                              <p className="text-sm text-gray-600">Growing Degree Days</p>
-                              <p className="text-xl font-semibold text-farm-primary">
-                                {weatherData.agriculturalMetrics.growingDegreeDays}
-                              </p>
-                            </div>
-                            <div className="bg-farm-light p-4 rounded-md">
-                              <p className="text-sm text-gray-600">Chill Hours</p>
-                              <p className="text-xl font-semibold text-farm-primary">
-                                {weatherData.agriculturalMetrics.chillHours}
-                              </p>
-                            </div>
-                            <div className="bg-farm-light p-4 rounded-md">
-                              <p className="text-sm text-gray-600">Frost Risk Days</p>
-                              <p className="text-xl font-semibold text-farm-primary">
-                                {weatherData.agriculturalMetrics.frostRiskDays}
-                              </p>
-                            </div>
-                            <div className="bg-farm-light p-4 rounded-md">
-                              <p className="text-sm text-gray-600">Soil Temperature</p>
-                              <p className="text-xl font-semibold text-farm-primary">
-                                {weatherData.agriculturalMetrics.soilTemperature}°C
-                              </p>
-                            </div>
-                          </div>
-                        </div>
+
+                        {/* Agricultural Metrics Removed - Add note or alternative source if needed */}
+                         <div className="mt-8 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+                            <p className="text-sm text-yellow-700">
+                                Note: Specific agricultural metrics like Growing Degree Days (GDD) and Chill Hours require specialized data or calculations not included in the standard forecast. Consult agricultural resources for these metrics.
+                            </p>
+                         </div>
+
                       </CardContent>
                     </Card>
                   </TabsContent>
-                  
+
+                  {/* Forecast Tab */}
                   <TabsContent value="forecast" className="animate-fade-in">
                     <Card>
                       <CardHeader>
-                        <CardTitle>7-Day Forecast for {displayLocation}</CardTitle>
+                        <CardTitle>7-Day Forecast for {displayLocation || apiWeatherData.locationName}</CardTitle>
                         <CardDescription>
-                          Plan your farming activities with our weekly forecast
+                          Daily weather predictions
                         </CardDescription>
                       </CardHeader>
                       <CardContent>
-                        <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
-                          {weatherData.forecast.map((day, index) => (
-                            <div key={index} className="bg-white p-4 rounded-lg border text-center">
-                              <p className="font-medium mb-2">{day.day}</p>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2 md:gap-4">
+                          {apiWeatherData.forecast.map((day, index) => (
+                            <div key={index} className="bg-white p-3 md:p-4 rounded-lg border text-center">
+                              <p className="font-medium mb-2 text-sm md:text-base">{day.day}</p>
                               <div className="mb-2 flex justify-center">
-                                {getWeatherIcon(day.condition)}
+                                {getWeatherIcon(day.condition, day.conditionDescription)}
                               </div>
-                              <p className="text-sm">{day.condition}</p>
-                              <div className="flex justify-center items-center gap-2 mt-2">
-                                <span className="text-red-500 font-medium">{day.high}°</span>
+                              <p className="text-xs md:text-sm capitalize">{day.conditionDescription}</p>
+                              <div className="flex justify-center items-center gap-1 md:gap-2 mt-2">
+                                <span className="text-red-500 font-medium text-sm md:text-base">{day.high}°</span>
                                 <span className="text-xs text-gray-400">|</span>
-                                <span className="text-blue-500 font-medium">{day.low}°</span>
+                                <span className="text-blue-500 font-medium text-sm md:text-base">{day.low}°</span>
                               </div>
                               <p className="text-xs mt-2">
-                                <span className="text-blue-500">{day.precipitation}%</span> precip.
+                                <span className="text-blue-600">{day.precipitation}%</span> precip.
                               </p>
                             </div>
                           ))}
                         </div>
-
-                        <div className="mt-8 bg-white p-6 rounded-lg border">
-                          <h3 className="font-semibold text-lg mb-4">Precipitation Forecast</h3>
-                          <div className="h-48 bg-gray-100 flex items-center justify-center">
-                            <p className="text-gray-500">
-                              Precipitation forecast chart
-                              <br />
-                              (Chart component would be integrated here)
+                         {/* Agricultural Metrics Removed - Add note or alternative source if needed */}
+                         <div className="mt-8 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+                            <p className="text-sm text-yellow-700">
+                                Note: Specific agricultural metrics like Growing Degree Days (GDD) and Chill Hours require specialized data or calculations not included in the standard forecast. Consult agricultural resources for these metrics.
                             </p>
-                          </div>
-                        </div>
-                        
-                        <div className="mt-8">
-                          <h3 className="font-semibold text-lg mb-4">Farming Recommendations</h3>
-                          <ul className="space-y-3">
-                            <li className="flex items-start gap-2 p-3 bg-farm-secondary/10 rounded-md">
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-farm-primary flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M12 2v2"/>
-                                <path d="M12 8v2"/>
-                                <path d="m4.93 4.93 1.41 1.41"/>
-                                <path d="m17.66 17.66 1.41 1.41"/>
-                                <path d="M2 12h2"/>
-                                <path d="M20 12h2"/>
-                                <path d="m6.34 17.66-1.41 1.41"/>
-                                <path d="m19.07 4.93-1.41 1.41"/>
-                              </svg>
-                              <span>Optimal planting conditions for the next 3 days with warm temperatures and no precipitation.</span>
-                            </li>
-                            <li className="flex items-start gap-2 p-3 bg-farm-secondary/10 rounded-md">
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-farm-primary flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/>
-                                <path d="M8 19v1"/>
-                                <path d="M8 14v1"/>
-                                <path d="M16 19v1"/>
-                                <path d="M16 14v1"/>
-                                <path d="M12 21v1"/>
-                                <path d="M12 16v1"/>
-                              </svg>
-                              <span>Consider irrigation planning for Thursday onward, as significant rainfall is expected.</span>
-                            </li>
-                            <li className="flex items-start gap-2 p-3 bg-farm-secondary/10 rounded-md">
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-yellow-500 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
-                                <line x1="12" y1="9" x2="12" y2="13"></line>
-                                <line x1="12" y1="17" x2="12.01" y2="17"></line>
-                              </svg>
-                              <span>Moderate risk of heavy rain on Friday - secure any vulnerable seedlings and ensure proper drainage.</span>
-                            </li>
-                          </ul>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </TabsContent>
-                  
-                  <TabsContent value="seasonal" className="animate-fade-in">
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Seasonal Climate Data for {displayLocation}</CardTitle>
-                        <CardDescription>
-                          Plan your long-term farming strategy with seasonal patterns
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-8">
-                          <div>
-                            <h3 className="font-semibold text-lg mb-4">Temperature Patterns</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                              <div className="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-md">
-                                <p className="font-medium mb-2">Winter</p>
-                                <p className="text-xl font-semibold">{weatherData.seasonal.temperature.winter.avg}°C</p>
-                                <p className="text-xs">
-                                  Range: {weatherData.seasonal.temperature.winter.min}° - {weatherData.seasonal.temperature.winter.max}°C
-                                </p>
-                              </div>
-                              <div className="bg-green-50 dark:bg-green-900/30 p-4 rounded-md">
-                                <p className="font-medium mb-2">Spring</p>
-                                <p className="text-xl font-semibold">{weatherData.seasonal.temperature.spring.avg}°C</p>
-                                <p className="text-xs">
-                                  Range: {weatherData.seasonal.temperature.spring.min}° - {weatherData.seasonal.temperature.spring.max}°C
-                                </p>
-                              </div>
-                              <div className="bg-yellow-50 dark:bg-yellow-900/30 p-4 rounded-md">
-                                <p className="font-medium mb-2">Summer</p>
-                                <p className="text-xl font-semibold">{weatherData.seasonal.temperature.summer.avg}°C</p>
-                                <p className="text-xs">
-                                  Range: {weatherData.seasonal.temperature.summer.min}° - {weatherData.seasonal.temperature.summer.max}°C
-                                </p>
-                              </div>
-                              <div className="bg-orange-50 dark:bg-orange-900/30 p-4 rounded-md">
-                                <p className="font-medium mb-2">Fall</p>
-                                <p className="text-xl font-semibold">{weatherData.seasonal.temperature.fall.avg}°C</p>
-                                <p className="text-xs">
-                                  Range: {weatherData.seasonal.temperature.fall.min}° - {weatherData.seasonal.temperature.fall.max}°C
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <div>
-                            <h3 className="font-semibold text-lg mb-4">Seasonal Rainfall</h3>
-                            <div className="bg-white p-6 rounded-lg border">
-                              <div className="h-48 bg-gray-100 flex items-center justify-center">
-                                <p className="text-gray-500">
-                                  Seasonal rainfall chart
-                                  <br />
-                                  (Chart component would be integrated here)
-                                </p>
-                              </div>
-                              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-                                <div>
-                                  <p className="text-sm text-gray-500">Winter</p>
-                                  <p className="text-xl font-semibold">{weatherData.seasonal.rainfall.winter} mm</p>
-                                </div>
-                                <div>
-                                  <p className="text-sm text-gray-500">Spring</p>
-                                  <p className="text-xl font-semibold">{weatherData.seasonal.rainfall.spring} mm</p>
-                                </div>
-                                <div>
-                                  <p className="text-sm text-gray-500">Summer</p>
-                                  <p className="text-xl font-semibold">{weatherData.seasonal.rainfall.summer} mm</p>
-                                </div>
-                                <div>
-                                  <p className="text-sm text-gray-500">Fall</p>
-                                  <p className="text-xl font-semibold">{weatherData.seasonal.rainfall.fall} mm</p>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <div>
-                            <h3 className="font-semibold text-lg mb-4">Crop Planning Calendar</h3>
-                            <div className="bg-white p-6 rounded-lg border">
-                              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                                <div className="p-4 bg-blue-50 dark:bg-blue-900/30 rounded-md">
-                                  <p className="font-medium mb-2">Winter (Dec-Feb)</p>
-                                  <ul className="text-sm space-y-1">
-                                    <li>• Planning & preparation</li>
-                                    <li>• Equipment maintenance</li>
-                                    <li>• Soil testing</li>
-                                  </ul>
-                                </div>
-                                <div className="p-4 bg-green-50 dark:bg-green-900/30 rounded-md">
-                                  <p className="font-medium mb-2">Spring (Mar-May)</p>
-                                  <ul className="text-sm space-y-1">
-                                    <li>• Soil preparation</li>
-                                    <li>• Early crop planting</li>
-                                    <li>• Fertilizer application</li>
-                                  </ul>
-                                </div>
-                                <div className="p-4 bg-yellow-50 dark:bg-yellow-900/30 rounded-md">
-                                  <p className="font-medium mb-2">Summer (Jun-Aug)</p>
-                                  <ul className="text-sm space-y-1">
-                                    <li>• Irrigation management</li>
-                                    <li>• Pest control</li>
-                                    <li>• Early harvesting</li>
-                                  </ul>
-                                </div>
-                                <div className="p-4 bg-orange-50 dark:bg-orange-900/30 rounded-md">
-                                  <p className="font-medium mb-2">Fall (Sep-Nov)</p>
-                                  <ul className="text-sm space-y-1">
-                                    <li>• Main harvest season</li>
-                                    <li>• Cover crop planting</li>
-                                    <li>• Soil amendments</li>
-                                  </ul>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
+                         </div>
                       </CardContent>
                     </Card>
                   </TabsContent>
