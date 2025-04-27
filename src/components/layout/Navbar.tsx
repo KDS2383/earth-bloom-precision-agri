@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
-import logo from '@/assets/logo.svg';
+import logo from '@/assets/logo2.png';
 
 // This will be replaced with actual auth logic
 const FAKE_USER = {
