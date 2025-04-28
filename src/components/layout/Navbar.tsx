@@ -21,6 +21,7 @@ import { getUserProfile } from '@/services/firebase/userService';
 export function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [userProfilePic, setUserProfilePic] = useState<string | null>(null);
+  const [displayName, setDisplayName] = useState<string | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -33,6 +34,9 @@ export function Navbar() {
           const profile = await getUserProfile();
           if (profile?.photoURL) {
             setUserProfilePic(profile.photoURL);
+          }
+          if (profile?.displayName) {
+            setDisplayName(profile.displayName);
           }
         } catch (error) {
           console.error('Error fetching user profile:', error);
@@ -72,9 +76,9 @@ export function Navbar() {
     { name: 'Contact Us', path: '/contact' },
   ];
 
-  // Function to get user display name or email
+  // Function to get user display name from database or fallback
   const getUserDisplayName = () => {
-    return user?.displayName || user?.email?.split('@')[0] || 'User';
+    return displayName || user?.displayName || user?.email?.split('@')[0] || 'User';
   };
 
   return (
@@ -114,11 +118,11 @@ export function Navbar() {
                   className="relative h-10 w-auto rounded-full flex items-center gap-2"
                 >
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={userProfilePic || user.photoURL || undefined} alt={user.displayName || 'User'} />
+                    <AvatarImage src={userProfilePic || user.photoURL || undefined} alt={getUserDisplayName()} />
                     <AvatarFallback className="bg-farm-secondary text-white">
-                      {user.displayName
-                        ? user.displayName.split(' ').map((n) => n[0]).join('')
-                        : user.email?.charAt(0).toUpperCase()}
+                      {displayName
+                        ? displayName.split(' ').map((n) => n[0]).join('')
+                        : user?.email?.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <span className="text-sm font-medium">{getUserDisplayName()}</span>
@@ -127,11 +131,11 @@ export function Navbar() {
               <DropdownMenuContent align="end" className="w-56">
                 <div className="flex items-center justify-start gap-2 p-2">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={userProfilePic || user.photoURL || undefined} alt={user.displayName || 'User'} />
+                    <AvatarImage src={userProfilePic || user.photoURL || undefined} alt={getUserDisplayName()} />
                     <AvatarFallback className="bg-farm-secondary text-white">
-                      {user.displayName
-                        ? user.displayName.split(' ').map((n) => n[0]).join('')
-                        : user.email?.charAt(0).toUpperCase()}
+                      {displayName
+                        ? displayName.split(' ').map((n) => n[0]).join('')
+                        : user?.email?.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex flex-col space-y-0.5 leading-none">
