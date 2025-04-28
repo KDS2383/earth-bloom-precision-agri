@@ -18,12 +18,14 @@ const ProfileSection = ({ userData, onUpdate }: ProfileSectionProps) => {
   const { user } = useAuth();
   const [displayName, setDisplayName] = useState(userData?.displayName || user?.displayName || '');
   const [profileUrl, setProfileUrl] = useState(userData?.photoURL || user?.photoURL || '');
+  const [contactNumber, setContactNumber] = useState(userData?.contactNumber || '');
   
   // Update local state when userData changes
   useEffect(() => {
     if (userData) {
       setDisplayName(userData.displayName || user?.displayName || '');
       setProfileUrl(userData.photoURL || user?.photoURL || '');
+      setContactNumber(userData.contactNumber || '');
     }
   }, [userData, user]);
 
@@ -31,6 +33,12 @@ const ProfileSection = ({ userData, onUpdate }: ProfileSectionProps) => {
     const newDisplayName = e.target.value;
     setDisplayName(newDisplayName);
     onUpdate({ displayName: newDisplayName });
+  };
+
+  const handleContactNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newContactNumber = e.target.value;
+    setContactNumber(newContactNumber);
+    onUpdate({ contactNumber: newContactNumber });
   };
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -82,6 +90,16 @@ const ProfileSection = ({ userData, onUpdate }: ProfileSectionProps) => {
             value={displayName}
             onChange={handleDisplayNameChange}
             placeholder="Enter your display name"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="contact-number">Contact Number</Label>
+          <Input
+            id="contact-number"
+            value={contactNumber}
+            onChange={handleContactNumberChange}
+            placeholder="Enter your contact number"
+            type="tel"
           />
         </div>
         <div className="space-y-2">

@@ -6,6 +6,7 @@ export interface UserProfile {
   displayName?: string;
   email?: string;
   photoURL?: string;
+  contactNumber?: string;
   location?: {
     address: string;
     city: string;
