@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,17 +7,40 @@ import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { User, Image } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { UserProfile } from '@/services/firebase/userService';
 
-const ProfileSection = () => {
+interface ProfileSectionProps {
+  userData: UserProfile | null;
+  onUpdate: (data: Partial<UserProfile>) => void;
+}
+
+const ProfileSection = ({ userData, onUpdate }: ProfileSectionProps) => {
   const { user } = useAuth();
-  const [profileUrl, setProfileUrl] = React.useState(user?.photoURL || '');
+  const [displayName, setDisplayName] = useState(userData?.displayName || user?.displayName || '');
+  const [profileUrl, setProfileUrl] = useState(userData?.photoURL || user?.photoURL || '');
+  
+  // Update local state when userData changes
+  useEffect(() => {
+    if (userData) {
+      setDisplayName(userData.displayName || user?.displayName || '');
+      setProfileUrl(userData.photoURL || user?.photoURL || '');
+    }
+  }, [userData, user]);
+
+  const handleDisplayNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newDisplayName = e.target.value;
+    setDisplayName(newDisplayName);
+    onUpdate({ displayName: newDisplayName });
+  };
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setProfileUrl(reader.result as string);
+        const newProfileUrl = reader.result as string;
+        setProfileUrl(newProfileUrl);
+        onUpdate({ photoURL: newProfileUrl });
       };
       reader.readAsDataURL(file);
     }
@@ -36,7 +59,7 @@ const ProfileSection = () => {
           <Avatar className="h-20 w-20">
             <AvatarImage src={profileUrl} />
             <AvatarFallback>
-              {user?.displayName?.[0] || user?.email?.[0]?.toUpperCase() || 'U'}
+              {displayName?.[0] || user?.email?.[0]?.toUpperCase() || 'U'}
             </AvatarFallback>
           </Avatar>
           <div className="space-y-2">
@@ -56,7 +79,8 @@ const ProfileSection = () => {
           <Label htmlFor="display-name">Display Name</Label>
           <Input
             id="display-name"
-            defaultValue={user?.displayName || ''}
+            value={displayName}
+            onChange={handleDisplayNameChange}
             placeholder="Enter your display name"
           />
         </div>
@@ -64,7 +88,7 @@ const ProfileSection = () => {
           <Label htmlFor="email">Email</Label>
           <Input
             id="email"
-            defaultValue={user?.email || ''}
+            value={user?.email || ''}
             disabled
             className="bg-muted"
           />

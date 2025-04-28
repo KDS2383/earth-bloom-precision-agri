@@ -1,25 +1,63 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tractor } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
+import { UserProfile } from '@/services/firebase/userService';
 
-const FarmSection = () => {
-  const [farmName, setFarmName] = useState('');
-  const [farmSize, setFarmSize] = useState('');
-  const [mainCrops, setMainCrops] = useState('');
-  const [soilType, setSoilType] = useState('');
-  const { toast } = useToast();
+interface FarmSectionProps {
+  userData: UserProfile | null;
+  onUpdate: (data: Partial<UserProfile>) => void;
+}
 
-  const handleSaveLocal = () => {
-    // This would typically save to a database, but for now we'll just show a success toast
-    toast({
-      title: "Farm details updated",
-      description: "Your farm information has been saved."
+const FarmSection = ({ userData, onUpdate }: FarmSectionProps) => {
+  const [farmName, setFarmName] = useState(userData?.farm?.farmName || '');
+  const [farmSize, setFarmSize] = useState(userData?.farm?.farmSize || '');
+  const [mainCrops, setMainCrops] = useState(userData?.farm?.mainCrops || '');
+  const [soilType, setSoilType] = useState(userData?.farm?.soilType || '');
+
+  // Update local state when userData changes
+  useEffect(() => {
+    if (userData?.farm) {
+      setFarmName(userData.farm.farmName || '');
+      setFarmSize(userData.farm.farmSize || '');
+      setMainCrops(userData.farm.mainCrops || '');
+      setSoilType(userData.farm.soilType || '');
+    }
+  }, [userData]);
+
+  const handleFarmNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newFarmName = e.target.value;
+    setFarmName(newFarmName);
+    updateFarm('farmName', newFarmName);
+  };
+
+  const handleFarmSizeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newFarmSize = e.target.value;
+    setFarmSize(newFarmSize);
+    updateFarm('farmSize', newFarmSize);
+  };
+
+  const handleMainCropsChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newMainCrops = e.target.value;
+    setMainCrops(newMainCrops);
+    updateFarm('mainCrops', newMainCrops);
+  };
+
+  const handleSoilTypeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newSoilType = e.target.value;
+    setSoilType(newSoilType);
+    updateFarm('soilType', newSoilType);
+  };
+
+  const updateFarm = (field: string, value: string) => {
+    onUpdate({
+      farm: {
+        ...(userData?.farm || { farmName: '', farmSize: '', mainCrops: '', soilType: '' }),
+        [field]: value
+      }
     });
   };
 
@@ -38,7 +76,7 @@ const FarmSection = () => {
             id="farm-name" 
             placeholder="Enter your farm name" 
             value={farmName}
-            onChange={(e) => setFarmName(e.target.value)}
+            onChange={handleFarmNameChange}
           />
         </div>
         <div className="space-y-2">
@@ -48,7 +86,7 @@ const FarmSection = () => {
             type="number" 
             placeholder="Enter farm size" 
             value={farmSize}
-            onChange={(e) => setFarmSize(e.target.value)}
+            onChange={handleFarmSizeChange}
           />
         </div>
         <div className="space-y-2">
@@ -57,7 +95,7 @@ const FarmSection = () => {
             id="crop-types" 
             placeholder="Enter the types of crops you grow"
             value={mainCrops}
-            onChange={(e) => setMainCrops(e.target.value)}
+            onChange={handleMainCropsChange}
           />
         </div>
         <div className="space-y-2">
@@ -66,10 +104,9 @@ const FarmSection = () => {
             id="soil-type" 
             placeholder="Enter your soil type" 
             value={soilType}
-            onChange={(e) => setSoilType(e.target.value)}
+            onChange={handleSoilTypeChange}
           />
         </div>
-        <Button onClick={handleSaveLocal} className="w-full mt-2">Save Farm Information</Button>
       </CardContent>
     </Card>
   );

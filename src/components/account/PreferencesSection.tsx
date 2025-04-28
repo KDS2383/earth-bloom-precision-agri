@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -12,8 +12,52 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Settings } from "lucide-react";
+import { UserProfile } from '@/services/firebase/userService';
 
-const PreferencesSection = () => {
+interface PreferencesSectionProps {
+  userData: UserProfile | null;
+  onUpdate: (data: Partial<UserProfile>) => void;
+}
+
+const PreferencesSection = ({ userData, onUpdate }: PreferencesSectionProps) => {
+  const [emailNotifications, setEmailNotifications] = useState(userData?.preferences?.emailNotifications || false);
+  const [temperatureUnit, setTemperatureUnit] = useState<'celsius' | 'fahrenheit'>(userData?.preferences?.temperatureUnit || 'celsius');
+  const [darkMode, setDarkMode] = useState(userData?.preferences?.darkMode || false);
+
+  // Update local state when userData changes
+  useEffect(() => {
+    if (userData?.preferences) {
+      setEmailNotifications(userData.preferences.emailNotifications || false);
+      setTemperatureUnit(userData.preferences.temperatureUnit || 'celsius');
+      setDarkMode(userData.preferences.darkMode || false);
+    }
+  }, [userData]);
+
+  const handleEmailNotificationsChange = (checked: boolean) => {
+    setEmailNotifications(checked);
+    updatePreferences('emailNotifications', checked);
+  };
+
+  const handleTemperatureUnitChange = (value: string) => {
+    const unit = value as 'celsius' | 'fahrenheit';
+    setTemperatureUnit(unit);
+    updatePreferences('temperatureUnit', unit);
+  };
+
+  const handleDarkModeChange = (checked: boolean) => {
+    setDarkMode(checked);
+    updatePreferences('darkMode', checked);
+  };
+
+  const updatePreferences = (field: string, value: any) => {
+    onUpdate({
+      preferences: {
+        ...(userData?.preferences || { emailNotifications: false, temperatureUnit: 'celsius', darkMode: false }),
+        [field]: value
+      }
+    });
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -30,11 +74,17 @@ const PreferencesSection = () => {
               Receive updates about your farm and recommendations
             </p>
           </div>
-          <Switch />
+          <Switch 
+            checked={emailNotifications}
+            onCheckedChange={handleEmailNotificationsChange}
+          />
         </div>
         <div className="space-y-2">
           <Label>Temperature Unit</Label>
-          <Select defaultValue="celsius">
+          <Select 
+            value={temperatureUnit}
+            onValueChange={handleTemperatureUnitChange}
+          >
             <SelectTrigger>
               <SelectValue placeholder="Select temperature unit" />
             </SelectTrigger>
@@ -53,7 +103,10 @@ const PreferencesSection = () => {
               Switch between light and dark theme
             </p>
           </div>
-          <Switch />
+          <Switch 
+            checked={darkMode}
+            onCheckedChange={handleDarkModeChange}
+          />
         </div>
       </CardContent>
     </Card>

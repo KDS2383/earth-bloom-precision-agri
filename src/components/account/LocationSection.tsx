@@ -1,24 +1,62 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MapPin } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { UserProfile } from '@/services/firebase/userService';
 
-const LocationSection = () => {
-  const [address, setAddress] = useState('');
-  const [city, setCity] = useState('');
-  const [state, setState] = useState('');
-  const [postalCode, setPostalCode] = useState('');
-  const { toast } = useToast();
+interface LocationSectionProps {
+  userData: UserProfile | null;
+  onUpdate: (data: Partial<UserProfile>) => void;
+}
 
-  const handleSaveLocation = () => {
-    // This would typically save to a database, but for now we'll just show a success toast
-    toast({
-      title: "Location updated",
-      description: "Your location information has been saved."
+const LocationSection = ({ userData, onUpdate }: LocationSectionProps) => {
+  const [address, setAddress] = useState(userData?.location?.address || '');
+  const [city, setCity] = useState(userData?.location?.city || '');
+  const [state, setState] = useState(userData?.location?.state || '');
+  const [postalCode, setPostalCode] = useState(userData?.location?.postalCode || '');
+
+  // Update local state when userData changes
+  useEffect(() => {
+    if (userData?.location) {
+      setAddress(userData.location.address || '');
+      setCity(userData.location.city || '');
+      setState(userData.location.state || '');
+      setPostalCode(userData.location.postalCode || '');
+    }
+  }, [userData]);
+
+  const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newAddress = e.target.value;
+    setAddress(newAddress);
+    updateLocation('address', newAddress);
+  };
+
+  const handleCityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newCity = e.target.value;
+    setCity(newCity);
+    updateLocation('city', newCity);
+  };
+
+  const handleStateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newState = e.target.value;
+    setState(newState);
+    updateLocation('state', newState);
+  };
+
+  const handlePostalCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newPostalCode = e.target.value;
+    setPostalCode(newPostalCode);
+    updateLocation('postalCode', newPostalCode);
+  };
+
+  const updateLocation = (field: string, value: string) => {
+    onUpdate({
+      location: {
+        ...(userData?.location || { address: '', city: '', state: '', postalCode: '' }),
+        [field]: value
+      }
     });
   };
 
@@ -37,7 +75,7 @@ const LocationSection = () => {
             id="address" 
             placeholder="Enter your street address" 
             value={address}
-            onChange={(e) => setAddress(e.target.value)}
+            onChange={handleAddressChange}
           />
         </div>
         <div className="grid grid-cols-2 gap-4">
@@ -47,7 +85,7 @@ const LocationSection = () => {
               id="city" 
               placeholder="Enter your city" 
               value={city}
-              onChange={(e) => setCity(e.target.value)}
+              onChange={handleCityChange}
             />
           </div>
           <div className="space-y-2">
@@ -56,7 +94,7 @@ const LocationSection = () => {
               id="state" 
               placeholder="Enter your state" 
               value={state}
-              onChange={(e) => setState(e.target.value)}
+              onChange={handleStateChange}
             />
           </div>
         </div>
@@ -66,10 +104,9 @@ const LocationSection = () => {
             id="postal-code" 
             placeholder="Enter your postal code" 
             value={postalCode}
-            onChange={(e) => setPostalCode(e.target.value)}
+            onChange={handlePostalCodeChange}
           />
         </div>
-        <Button onClick={handleSaveLocation} className="w-full mt-2">Save Location</Button>
       </CardContent>
     </Card>
   );
