@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -17,17 +16,31 @@ import { useAuth } from '@/context/AuthContext';
 import { auth } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
+import { getUserProfile } from '@/services/firebase/userService';
 
 export function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [userProfilePic, setUserProfilePic] = useState<string | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
   
-  // Debug log to see if user state is updating
   useEffect(() => {
-    console.log("Navbar rendered, user state:", user ? "Logged in" : "Not logged in");
+    const fetchUserProfile = async () => {
+      if (user) {
+        try {
+          const profile = await getUserProfile();
+          if (profile?.photoURL) {
+            setUserProfilePic(profile.photoURL);
+          }
+        } catch (error) {
+          console.error('Error fetching user profile:', error);
+        }
+      }
+    };
+
+    fetchUserProfile();
   }, [user]);
 
   const handleLogout = async () => {
@@ -101,7 +114,7 @@ export function Navbar() {
                   className="relative h-10 w-auto rounded-full flex items-center gap-2"
                 >
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={user.photoURL || undefined} alt={user.displayName || 'User'} />
+                    <AvatarImage src={userProfilePic || user.photoURL || undefined} alt={user.displayName || 'User'} />
                     <AvatarFallback className="bg-farm-secondary text-white">
                       {user.displayName
                         ? user.displayName.split(' ').map((n) => n[0]).join('')
@@ -114,7 +127,7 @@ export function Navbar() {
               <DropdownMenuContent align="end" className="w-56">
                 <div className="flex items-center justify-start gap-2 p-2">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={user.photoURL || undefined} alt={user.displayName || 'User'} />
+                    <AvatarImage src={userProfilePic || user.photoURL || undefined} alt={user.displayName || 'User'} />
                     <AvatarFallback className="bg-farm-secondary text-white">
                       {user.displayName
                         ? user.displayName.split(' ').map((n) => n[0]).join('')
