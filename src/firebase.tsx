@@ -33,11 +33,16 @@ if (!firebaseConfig.apiKey || !firebaseConfig.authDomain || !firebaseConfig.proj
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
+import { getFirestore } from "firebase/firestore";
+
 // *** Initialize Firebase Authentication (Needed for Login/Signup) ***
 const auth = getAuth(app);
 
 // *** Initialize Google Auth Provider (Needed for Google Sign-In) ***
 const provider = new GoogleAuthProvider();
+
+// Initialize Firestore
+const db = getFirestore(app);
 
 // Optional: Initialize Firebase Analytics (only if needed and in production)
 let analytics = null;
@@ -51,4 +56,4 @@ if (typeof window !== "undefined" && import.meta.env.PROD && firebaseConfig.meas
 }
 
 // Export Firebase services you need for your app
-export { app, auth, provider, analytics }; // Make sure auth and provider are exported
+export { app, auth, provider, analytics, db }; // Make sure auth and provider are exported
