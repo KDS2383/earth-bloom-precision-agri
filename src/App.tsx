@@ -4,8 +4,12 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+<<<<<<< HEAD
 
 // Import Pages
+=======
+import { AuthProvider } from "./context/AuthContext";
+>>>>>>> parent of f5a65cf (Merge pull request #9 from KDS2383/kartik)
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Recommendation from "./pages/Recommendation";
@@ -17,76 +21,35 @@ import SignIn from "./pages/Auth/SignIn";
 import SignUp from "./pages/Auth/SignUp";
 import Account from "./pages/Account";
 
-// Import Auth related components
-import { AuthProvider } from "./context/AuthContext";
-import ProtectedRoute from "./components/auth/ProtectedRoute";
-
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <AuthProvider>
+    <AuthProvider>
+      <TooltipProvider>
         <Toaster />
         <Sonner />
         <BrowserRouter>
           <Routes>
-            {/* Public Routes */}
             <Route path="/" element={<Index />} />
+            <Route path="/account" element={<Account />} />
+            <Route path="/recommendation" element={<Recommendation />} />
+            <Route path="/results" element={<Results />} />
+            <Route path="/soil-data" element={<SoilData />} />
+            <Route path="/weather" element={<Weather />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/signin" element={<SignIn />} />
             <Route path="/signup" element={<SignUp />} />
-
-            {/* Routes Protected by Authentication */}
-            <Route
-              path="/account"
-              element={
-                <ProtectedRoute>
-                  <Account />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/recommendation"
-              element={
-                <ProtectedRoute>
-                  <Recommendation />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/results"
-              element={
-                <ProtectedRoute>
-                  <Results />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/soil-data"
-              element={
-                <ProtectedRoute>
-                  <SoilData />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/weather"
-              element={
-                <ProtectedRoute>
-                  <Weather />
-                </ProtectedRoute>
-              }
-            />
-
-            {/* Catch-all Not Found Route */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
-      </AuthProvider>
-    </TooltipProvider>
+      </TooltipProvider>
+    </AuthProvider>
   </QueryClientProvider>
 );
 
 export default App;
+<<<<<<< HEAD
 
+=======
+>>>>>>> parent of f5a65cf (Merge pull request #9 from KDS2383/kartik)
