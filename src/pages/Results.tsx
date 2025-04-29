@@ -30,6 +30,7 @@ import React, { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { getUserProfile, saveUserRecommendation, saveUserSoilData, saveUserWeatherData } from "@/services/firebase/userService";
 
 interface WeatherData {
   location: string;
@@ -71,6 +72,7 @@ const Results = () => {
   const [soilProgress, setSoilProgress] = useState(0);
   const [recommendationProgress, setRecommendationProgress] = useState(0);
   const [imagesProgress, setImagesProgress] = useState(0);
+  const [isLoadingUserData, setIsLoadingUserData] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -79,8 +81,53 @@ const Results = () => {
   useEffect(() => {
     if (!user) {
       navigate("/signin");
+    } else {
+      // Fetch user data if logged in
+      fetchUserData();
     }
   }, [user, navigate]);
+
+  const fetchUserData = async () => {
+    if (!user) return;
+    
+    setIsLoadingUserData(true);
+    try {
+      const userProfile = await getUserProfile();
+      
+      // If user has weather data, soil data, or recommendation data, use the most recent one
+      if (userProfile?.weatherData?.length) {
+        const recentWeatherData = userProfile.weatherData[userProfile.weatherData.length - 1];
+        setWeatherData(recentWeatherData);
+        setLocation(recentWeatherData.location);
+      }
+      
+      if (userProfile?.soilData?.length) {
+        const recentSoilData = userProfile.soilData[userProfile.soilData.length - 1];
+        setSoilData(recentSoilData);
+        if (!location) setLocation(recentSoilData.location);
+      }
+      
+      if (userProfile?.recommendations?.length) {
+        const recentRecommendation = userProfile.recommendations[userProfile.recommendations.length - 1];
+        setRecommendationData(recentRecommendation);
+        if (!location) setLocation(recentRecommendation.location);
+      }
+      
+      // If location is set from user data, fetch images for that location
+      if (location) {
+        fetchPexelsImages();
+      }
+    } catch (error: any) {
+      console.error("Error fetching user data:", error);
+      toast({
+        title: "Error fetching saved data",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingUserData(false);
+    }
+  };
 
   const handleLocationChange = (
     e: React.ChangeEvent<HTMLInputElement>
@@ -113,15 +160,22 @@ const Results = () => {
       }
 
       const data = await response.json();
-      setWeatherData({
+      const newWeatherData = {
         location: data.name,
         temperature: data.main.temp,
         humidity: data.main.humidity,
         windSpeed: data.wind.speed,
         description: data.weather[0].description,
         timestamp: new Date().toLocaleString(),
-      });
+      };
+      
+      setWeatherData(newWeatherData);
       setWeatherProgress(100);
+      
+      // If user is logged in, save the weather data to their profile
+      if (user) {
+        await saveUserWeatherData(newWeatherData);
+      }
     } catch (error: any) {
       toast({
         title: "Error fetching weather data",
@@ -148,16 +202,22 @@ const Results = () => {
       const potassium = Math.floor(Math.random() * 100);
       const ph = Math.floor(Math.random() * 14);
 
-      setSoilData({
+      const newSoilData = {
         location: location,
         nitrogen: nitrogen,
         phosphorus: phosphorus,
         potassium: potassium,
         ph: ph,
         timestamp: new Date().toLocaleString(),
-      });
-
+      };
+      
+      setSoilData(newSoilData);
       setSoilProgress(100);
+      
+      // If user is logged in, save the soil data to their profile
+      if (user) {
+        await saveUserSoilData(newSoilData);
+      }
     } catch (error: any) {
       toast({
         title: "Error fetching soil data",
@@ -185,14 +245,20 @@ const Results = () => {
       const fertilizer =
         fertilizers[Math.floor(Math.random() * fertilizers.length)];
 
-      setRecommendationData({
+      const newRecommendationData = {
         location: location,
         crop: crop,
         fertilizer: fertilizer,
         timestamp: new Date().toLocaleString(),
-      });
-
+      };
+      
+      setRecommendationData(newRecommendationData);
       setRecommendationProgress(100);
+      
+      // If user is logged in, save the recommendation data to their profile
+      if (user) {
+        await saveUserRecommendation(newRecommendationData);
+      }
     } catch (error: any) {
       toast({
         title: "Error fetching recommendation data",
@@ -303,6 +369,16 @@ const Results = () => {
   return (
     <Layout>
       <div className="container mx-auto py-10">
+        {/* Loading state for user data fetch */}
+        {isLoadingUserData && (
+          <div className="flex justify-center py-6 mb-4">
+            <div className="flex flex-col items-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-farm-primary mb-2"></div>
+              <p>Loading your saved data...</p>
+            </div>
+          </div>
+        )}
+      
         <div className="mb-8 flex items-center space-x-2">
           <Label htmlFor="location">Location:</Label>
           <Input

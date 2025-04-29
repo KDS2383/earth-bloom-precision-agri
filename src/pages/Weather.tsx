@@ -1,28 +1,65 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 // import { useToast } from "@/hooks/use-toast"; // Keep if used elsewhere, remove if not
 import { LocationInput } from "@/components/location/LocationInput";
 import { useWeatherData } from "@/utils/weatherApi"; // Import the updated hook
-// Removed unused icon imports (ThermometerSun, etc.) - using SVGs below
-// Import Button if needed, removed if not
-// import { Button } from "@/components/ui/button";
-
-// REMOVE MOCK DATA - const weatherData = { ... };
+import { useAuth } from "@/context/AuthContext";
+import { getUserProfile, saveUserWeatherData } from "@/services/firebase/userService";
+import { useToast } from "@/components/ui/use-toast";
 
 const Weather = () => {
   const [displayLocation, setDisplayLocation] = useState("");
   const [coordinates, setCoordinates] = useState<{lat: number, lng: number} | null>(null);
   const [usingCurrentLocation, setUsingCurrentLocation] = useState(false);
-  const [isLoadingLocation, setIsLoadingLocation] = useState(false); // Renamed from isLoading for clarity
-  // const { toast } = useToast(); // Keep if used
+  const [isLoadingLocation, setIsLoadingLocation] = useState(false);
+  const [isLoadingUserData, setIsLoadingUserData] = useState(false);
+  const { toast } = useToast();
+  const { user } = useAuth();
 
   // Use the hook to fetch real data
   const { data: apiWeatherData, isLoading: isWeatherLoading, isError } = useWeatherData(
     coordinates?.lat ?? null,
-    coordinates?.lng ?? null // OWM uses 'lon' but our state uses 'lng'
+    coordinates?.lng ?? null
   );
+
+  useEffect(() => {
+    // Fetch user's weather data if they're logged in
+    if (user) {
+      fetchUserWeatherData();
+    }
+  }, [user]);
+
+  // Function to fetch user's weather data
+  const fetchUserWeatherData = async () => {
+    if (!user) return;
+    
+    setIsLoadingUserData(true);
+    try {
+      const userProfile = await getUserProfile();
+      
+      // If user has weather data, use the most recent one
+      if (userProfile?.weatherData?.length) {
+        const recentWeatherData = userProfile.weatherData[userProfile.weatherData.length - 1];
+        
+        // Try to get coordinates for this location or use the location name
+        if (recentWeatherData.location) {
+          setDisplayLocation(recentWeatherData.location);
+          // You could implement geocoding here to get coordinates from the location name
+        }
+      }
+    } catch (error: any) {
+      console.error("Error fetching user weather data:", error);
+      toast({
+        title: "Error fetching saved weather data",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingUserData(false);
+    }
+  };
 
   const handleLocationSelect = (location: string, coords: {lat: number, lng: number}) => {
     setDisplayLocation(location);
@@ -32,9 +69,35 @@ const Weather = () => {
 
   const handleCurrentLocation = (coords: {lat: number, lng: number}, location: string) => {
     setCoordinates(coords);
-    setDisplayLocation(location || "Current Location"); // Use provided name or fallback
+    setDisplayLocation(location || "Current Location");
     setUsingCurrentLocation(true);
   };
+
+  // Save weather data when it's loaded (for logged-in users)
+  useEffect(() => {
+    if (user && apiWeatherData && !isWeatherLoading && !isError && displayLocation) {
+      // Save the current weather data to the user's profile
+      const saveData = async () => {
+        try {
+          const weatherDataToSave = {
+            location: displayLocation || apiWeatherData.locationName,
+            temperature: apiWeatherData.current.temperature,
+            humidity: apiWeatherData.current.humidity,
+            windSpeed: apiWeatherData.current.wind.speed,
+            description: apiWeatherData.current.conditionDescription,
+            timestamp: new Date().toLocaleString(),
+          };
+          
+          await saveUserWeatherData(weatherDataToSave);
+          console.log("Weather data saved to user profile");
+        } catch (error) {
+          console.error("Error saving weather data to user profile:", error);
+        }
+      };
+      
+      saveData();
+    }
+  }, [apiWeatherData, isWeatherLoading, isError, user, displayLocation]);
 
   // --- Updated getWeatherIcon ---
   // Takes the 'main' condition string from OpenWeatherMap (e.g., "Clear", "Clouds", "Rain")
@@ -97,13 +160,12 @@ const Weather = () => {
     }
   };
 
-  // --- Helper to get UV index description ---
   const getUvDescription = (uv: number): string => {
-     if (uv < 3) return "Low";
-     if (uv < 6) return "Moderate";
-     if (uv < 8) return "High";
-     if (uv < 11) return "Very High";
-     return "Extreme";
+    if (uv < 3) return "Low";
+    if (uv < 6) return "Moderate";
+    if (uv < 8) return "High";
+    if (uv < 11) return "Very High";
+    return "Extreme";
   }
 
   return (
@@ -120,6 +182,16 @@ const Weather = () => {
           </div>
 
           <div className="max-w-4xl mx-auto">
+            {/* Loading state for user data fetch */}
+            {isLoadingUserData && (
+              <div className="flex justify-center py-6 mb-4">
+                <div className="flex flex-col items-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-farm-primary mb-2"></div>
+                  <p>Loading your saved weather data...</p>
+                </div>
+              </div>
+            )}
+          
             <Card className="mb-8">
               <CardHeader>
                 <CardTitle>Check Weather Conditions</CardTitle>
@@ -132,11 +204,9 @@ const Weather = () => {
                   <LocationInput
                     onLocationSelect={handleLocationSelect}
                     onCurrentLocation={handleCurrentLocation}
-                    isLoading={isLoadingLocation} // Pass location loading state
-                    //setIsLoading={setIsLoadingLocation} // Allow LocationInput to set loading state
+                    isLoading={isLoadingLocation}
                     usingCurrentLocation={usingCurrentLocation}
                   />
-                  {/* Optional: Add explicit submit button if needed */}
                 </form>
               </CardContent>
             </Card>
