@@ -4,6 +4,7 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { getAnalytics } from "firebase/analytics";
+import { getFirestore } from "firebase/firestore";
 
 // Firebase configuration object
 const firebaseConfig = {
@@ -22,6 +23,9 @@ const app = initializeApp(firebaseConfig);
 // Initialize Firebase Authentication
 const auth = getAuth(app);
 
+// Initialize Firestore
+const db = getFirestore(app);
+
 // Initialize Google Auth Provider (for Google Sign-In)
 const provider = new GoogleAuthProvider();
 
@@ -32,23 +36,9 @@ if (typeof window !== "undefined" && process.env.NODE_ENV === "production") {
 }
 
 // Export Firebase services you need
-export { app, auth, provider, analytics };
+export { app, auth, db, provider, analytics };
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+// Comment out the alternative implementation
 // import { initializeApp } from "firebase/app";
 // import { getAuth, GoogleAuthProvider } from "firebase/auth";
 
