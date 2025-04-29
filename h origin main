@@ -1,0 +1,40 @@
+[33md98ed4b[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m Revert "Merge pull request #9 from KDS2383/kartik"
+[33mead179f[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Refactor: Split Results.tsx into smaller components
+[33m4bdece8[m feat: Auto-fetch and save data for logged-in users
+[33mc54ee81[m[33m ([m[1;31morigin/kartik[m[33m, [m[1;32mkartik[m[33m)[m Add contact number to account section
+[33m515c0b5[m feat: Display user name in profile section
+[33mb7bed8a[m feat: Display profile picture in navbar
+[33m21fb613[m Fix: Pass props to child components
+[33m42e5ded[m Add Firebase user data saving
+[33m6a8ce6f[m Feat: Add empty farm details section
+[33m7de7c67[m Fix: Import Farm icon from lucide-react
+[33mf9ca8f9[m feat: Implement account settings page
+[33me081b96[m Add user name to navbar
+[33mfb26e3b[m Fix: Remove duplicate AuthProvider import
+[33m20bb57d[m Update SoilData.tsx
+[33mf5a65cf[m Merge pull request #9 from KDS2383/kartik
+[33m04b5419[m Merge branch 'main' into kartik
+[33m462e5c2[m fix: Resolve conflict in SoilData after API implementation
+[33m811eb2b[m env file changes
+[33m26ede8f[m feat: Update Firebase config to use env variables
+[33m70b15be[m Fix: Update navbar after sign-in
+[33m5ee8ffe[m Fix: Resolve type comparison error
+[33m05db116[m Fix: Resolve TypeScript comparison error
+[33m16b6a8c[m feat: Implement user authentication and account management
+[33m14ab88e[m Merge pull request #8 from KDS2383/kartik
+[33m7733595[m Merge branch 'main' into kartik
+[33mb12f269[m removed api key
+[33m7c8af0b[m Added Sujal - acc files & minor changes in files
+[33mf7b3e92[m Update Results.tsx
+[33m4367fe0[m changes applied in weather page
+[33mbc6a4fb[m Current location and AutoAddressComplete feature added in soil and weather page
+[33mb4fc191[m Merge pull request #3 from KDS2383/kartik
+[33m7f22300[m Images added in report page
+[33m7fcb110[m Merge pull request #2 from KDS2383/kunal
+[33m8f1b568[m updated result page
+[33m26fbb50[m Merge pull request #1 from KDS2383/kunal
+[33med5cc87[m Result Page data binded
+[33ma86b008[m Recommendation Page Completed
+[33me2e7602[m feat: Add account management page
+[33m46b9f8e[m[33m ([m[1;31morigin/jyoti[m[33m)[m feat: Implement frontend for precision farming project
+[33mc75e81c[m Use tech stack vite_react_shadcn_ts
