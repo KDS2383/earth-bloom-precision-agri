@@ -1,4 +1,3 @@
-
 // src/pages/Results.tsx
 
 import { Layout } from "@/components/layout/Layout";
@@ -446,7 +445,24 @@ const Results = () => {
                           Recommended crop for your conditions
                         </CardDescription>
                       </CardHeader>
-                       <CardFooter>
+                      <CardContent className="space-y-2 pt-0">
+                        {/* NEW: Show common diseases preview on the card itself */}
+                        <div>
+                          <h4 className="text-sm font-medium mb-1 text-gray-600">Common Diseases:</h4>
+                          <ul className="text-sm">
+                            {crop.diseases && crop.diseases.length > 0 ? (
+                              crop.diseases.slice(0, 3).map((disease, index) => (
+                                <li key={index} className="text-farm-primary">
+                                  {disease.name || "Unknown Disease"}
+                                </li>
+                              ))
+                            ) : (
+                              <li className="text-gray-500">No disease information available</li>
+                            )}
+                          </ul>
+                        </div>
+                      </CardContent>
+                      <CardFooter>
                         <Dialog>
                           <DialogTrigger asChild>
                             <Button variant="outline" className="w-full">
@@ -534,14 +550,14 @@ const Results = () => {
                                 )}
                               </div>
                               
-                              {/* NEW: Common Diseases Section */}
+                              {/* Common Diseases Section in Dialog */}
                               <div>
                                 <h4 className="font-semibold">
                                   Common Diseases
                                 </h4>
                                 {crop.diseases && crop.diseases.length > 0 ? (
                                   <div className="space-y-3 mt-2">
-                                    {crop.diseases.slice(0, 3).map((disease, index) => (
+                                    {crop.diseases.map((disease, index) => (
                                       <div key={index} className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3 rounded-md">
                                         <p className="font-medium text-farm-primary mb-1">
                                           {disease.name || "Unknown Disease"}
