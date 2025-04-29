@@ -1,3 +1,4 @@
+
 // src/pages/Results.tsx
 
 import { Layout } from "@/components/layout/Layout";
@@ -214,12 +215,28 @@ const Results = () => {
       ],
     };
     const options: ChartOptions<keyof ChartTypeRegistry> = {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { position: "top" as const }, title: { display: true, text: "Daily Temperature & Precipitation Forecast" }, tooltip: { mode: "index", intersect: false } },
+      responsive: true, 
+      maintainAspectRatio: false,
+      plugins: { 
+        legend: { position: "top" as const }, 
+        title: { display: true, text: "Daily Temperature & Precipitation Forecast" }, 
+        tooltip: { mode: "index", intersect: false } 
+      },
       scales: {
         x: { title: { display: true, text: "Date" } },
-        "y-temp": { type: "linear" as const, position: "left" as const, title: { display: true, text: `Temperature (${temperatureUnit})` }, beginAtZero: false },
-        "y-precip": { type: "linear" as const, position: "right" as const, title: { display: true, text: `Precipitation (${precipitationUnit})` }, min: 0, grid: { drawOnChartArea: false } },
+        "y-temp": { 
+          type: "linear" as const, 
+          position: "left" as const, 
+          title: { display: true, text: `Temperature (${temperatureUnit})` }, 
+          beginAtZero: false 
+        },
+        "y-precip": { 
+          type: "linear" as const, 
+          position: "right" as const, 
+          title: { display: true, text: `Precipitation (${precipitationUnit})` }, 
+          min: 0, 
+          grid: { drawOnChartArea: false } 
+        },
       },
     };
     return { chartData: data, chartOptions: options, hasWeatherDataForChart: true };
@@ -240,14 +257,33 @@ const Results = () => {
     }
     const data: ChartData<'bar'> = {
       labels: validNutrients.map(n => n.label),
-      datasets: [{ label: 'Level (ppm)', data: validNutrients.map(n => n.value as number),
-          backgroundColor: validNutrients.map(n => n.color), borderColor: validNutrients.map(n => n.color.replace('0.6', '1')), borderWidth: 1, }],
+      datasets: [{ 
+        label: 'Level (ppm)', 
+        data: validNutrients.map(n => n.value as number),
+        backgroundColor: validNutrients.map(n => n.color), 
+        borderColor: validNutrients.map(n => n.color.replace('0.6', '1')), 
+        borderWidth: 1 
+      }],
     };
     const options: ChartOptions<'bar'> = {
-      responsive: true, maintainAspectRatio: false, indexAxis: 'y',
-      plugins: { legend: { display: false }, title: { display: true, text: 'Soil Nutrient Levels (ppm)' },
-        tooltip: { callbacks: { label: function(context) { return ` ${context.parsed.x !== null ? context.parsed.x : ''} ppm`; } } },
-      scales: { x: { beginAtZero: true, title: { display: true, text: 'Level (ppm)' }, }, y: { title: { display: false } }, },
+      responsive: true, 
+      maintainAspectRatio: false, 
+      indexAxis: 'y',
+      plugins: { 
+        legend: { display: false }, 
+        title: { display: true, text: 'Soil Nutrient Levels (ppm)' },
+        tooltip: { 
+          callbacks: { 
+            label: function(context) { 
+              return ` ${context.parsed.x !== null ? context.parsed.x : ''} ppm`; 
+            } 
+          } 
+        }
+      },
+      scales: { 
+        x: { beginAtZero: true, title: { display: true, text: 'Level (ppm)' } }, 
+        y: { title: { display: false } } 
+      }
     };
     return { nutrientChartData: data, nutrientChartOptions: options, hasNutrientDataForChart: true };
   }, [resultData.soilData]);
@@ -260,7 +296,7 @@ const Results = () => {
   // Helper function to get nutrient level category (Unchanged)
   const getNutrientCategory = (type: 'N' | 'P' | 'K', value: number | null): { category: string; colorClass: string } => {
       if (value === null) return { category: 'N/A', colorClass: 'text-gray-500' };
-      const thresholds = { N: { low: 80, high: 160 }, P: { low: 50, high: 100 }, K: { low: 100, high: 200 }, };
+      const thresholds = { N: { low: 80, high: 160 }, P: { low: 50, high: 100 }, K: { low: 100, high: 200 } };
       if (value < thresholds[type].low) return { category: 'Low', colorClass: 'text-orange-600' };
       if (value > thresholds[type].high) return { category: 'High', colorClass: 'text-red-600' };
       return { category: 'Medium', colorClass: 'text-green-600' };
@@ -353,7 +389,7 @@ const Results = () => {
               className="bg-farm-accent text-farm-dark hover:bg-farm-accent/80 font-medium"
               onClick={handleDownloadReport}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2"> <path d="M21 15v4a2 2 0 0 1-2 2H5a2 0 0 1-2-2v-4"/> <polyline points="7 10 12 15 17 10"/> <line x1="12" y1="15" x2="12" y2="3"/> </svg>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2"> <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/> <polyline points="7 10 12 15 17 10"/> <line x1="12" y1="15" x2="12" y2="3"/> </svg>
               Download Report
             </Button>
           </div>
@@ -613,4 +649,173 @@ const Results = () => {
                       </div>
                       <div>
                         <h3 className="text-lg font-semibold mb-2">General Soil Considerations</h3>
-                        <ul className="space-y-2 text-sm text-gray-600 dark:text-
+                        <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
+                          {resultData.soilData?.soilRecommendations?.length > 0 ? (
+                            resultData.soilData.soilRecommendations.map((rec, i) => (
+                              <li key={i} className="flex items-start gap-2">
+                                <FaInfoCircle className="text-blue-500 mt-1 shrink-0" />
+                                <span>{rec}</span>
+                              </li>
+                            ))
+                          ) : (
+                            <li className="flex items-start gap-2">
+                              <FaInfoCircle className="text-blue-500 mt-1 shrink-0" />
+                              <span>No specific soil recommendations available.</span>
+                            </li>
+                          )}
+                        </ul>
+                      </div>
+                    </div>
+                    
+                    {/* Right Column: Nutrient Info & Chart */}
+                    <div>
+                      <div className="mb-6">
+                        <h3 className="text-lg font-semibold mb-2">Soil Nutrients Analysis</h3>
+                        {hasNutrientDataForChart ? (
+                          <div className="aspect-video rounded-md border dark:border-gray-800 bg-muted/20 p-2 relative">
+                            <Chart type="bar" data={nutrientChartData} options={nutrientChartOptions} />
+                          </div>
+                        ) : (
+                          <div className="aspect-video flex items-center justify-center rounded-md border dark:border-gray-800 bg-muted/20">
+                            <p className="text-muted-foreground text-sm">Insufficient nutrient data available for chart.</p>
+                          </div>
+                        )}
+                      </div>
+
+                      <div>
+                        <h3 className="text-lg font-semibold mb-2">Nutrient Levels</h3>
+                        <div className="grid grid-cols-3 gap-4">
+                          {['N', 'P', 'K'].map((nutrient) => {
+                            const value = nutrient === 'N' ? resultData.soilData?.nitrogen :
+                                        nutrient === 'P' ? resultData.soilData?.phosphorus :
+                                        resultData.soilData?.potassium;
+                            const { category, colorClass } = getNutrientCategory(nutrient as 'N' | 'P' | 'K', value);
+                            return (
+                              <div key={nutrient} className="bg-gray-50 dark:bg-gray-800 p-3 rounded-md border border-gray-100 dark:border-gray-700">
+                                <p className="text-sm text-gray-500">
+                                  {nutrient === 'N' ? 'Nitrogen' : nutrient === 'P' ? 'Phosphorus' : 'Potassium'}
+                                </p>
+                                <div className="flex justify-between items-center mt-1">
+                                  <span className="font-medium">{value !== null ? `${value} ppm` : 'N/A'}</span>
+                                  <span className={`text-sm font-medium ${colorClass}`}>{category}</span>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            {/* ================== Weather Data Tab Content ================== */}
+            <TabsContent value="weather" className="animate-fade-in">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Weather Data for {resultData.location}</CardTitle>
+                  <CardDescription>
+                    Weather forecast and climate considerations for farming
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Left Column: Weather Chart */}
+                    <div>
+                      <h3 className="text-lg font-semibold mb-3">Weather Forecast</h3>
+                      {hasWeatherDataForChart ? (
+                        <div className="aspect-video rounded-md border dark:border-gray-800 bg-muted/20 p-2 mb-4">
+                          <Chart type="bar" data={weatherChartData} options={weatherChartOptions} />
+                        </div>
+                      ) : (
+                        <div className="aspect-video flex items-center justify-center rounded-md border dark:border-gray-800 bg-muted/20 mb-4">
+                          <p className="text-muted-foreground text-sm">Weather forecast data not available.</p>
+                        </div>
+                      )}
+                      
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                        <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-md">
+                          <p className="text-sm text-gray-500">Average Temperature</p>
+                          <p className="text-xl font-semibold">
+                            {resultData.weatherData?.temperature?.avg ?? 'N/A'}
+                            {resultData.weatherData?.temperature?.avg !== null ? <span className="text-xs"> {resultData.weatherData?.temperatureUnit}</span> : ''}
+                          </p>
+                        </div>
+                        <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-md">
+                          <p className="text-sm text-gray-500">Humidity</p>
+                          <p className="text-xl font-semibold">
+                            {resultData.weatherData?.humidity ?? 'N/A'}
+                            {resultData.weatherData?.humidity !== null ? <span className="text-xs"> {resultData.weatherData?.humidityUnit}</span> : ''}
+                          </p>
+                        </div>
+                        <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-md">
+                          <p className="text-sm text-gray-500">Rainfall</p>
+                          <p className="text-xl font-semibold">
+                            {resultData.weatherData?.rainfall ?? 'N/A'}
+                            {resultData.weatherData?.rainfall !== null ? <span className="text-xs"> {resultData.weatherData?.precipitationUnit}</span> : ''}
+                          </p>
+                        </div>
+                        <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-md">
+                          <p className="text-sm text-gray-500">Wind Speed</p>
+                          <p className="text-xl font-semibold">
+                            {resultData.weatherData?.windSpeed ?? 'N/A'}
+                            {resultData.weatherData?.windSpeed !== null ? <span className="text-xs"> {resultData.weatherData?.windSpeedUnit}</span> : ''}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Right Column: Climate Considerations */}
+                    <div>
+                      <h3 className="text-lg font-semibold mb-3">Climate Considerations</h3>
+                      <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-md border border-gray-200 dark:border-gray-700">
+                        <div className="space-y-4">
+                          {climateConsiderations.map((consideration, index) => (
+                            <div key={index} className="flex gap-3">
+                              {consideration.type === 'warning' && (
+                                <FaExclamationTriangle className="text-amber-500 shrink-0 mt-1" />
+                              )}
+                              {consideration.type === 'good' && (
+                                <FaCheckCircle className="text-green-500 shrink-0 mt-1" />
+                              )}
+                              {consideration.type === 'info' && (
+                                <FaInfoCircle className="text-blue-500 shrink-0 mt-1" />
+                              )}
+                              <p className="text-sm">{consideration.text}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      <div className="mt-6">
+                        <h3 className="text-lg font-semibold mb-3">Temperature Range</h3>
+                        <div className="p-4 rounded-md bg-gradient-to-r from-blue-500 via-green-400 to-red-500 text-white">
+                          <div className="flex justify-between mb-2">
+                            <span>Min: {resultData.weatherData?.temperature?.min !== null ? `${resultData.weatherData?.temperature?.min}${resultData.weatherData?.temperatureUnit}` : 'N/A'}</span>
+                            <span>Max: {resultData.weatherData?.temperature?.max !== null ? `${resultData.weatherData?.temperature?.max}${resultData.weatherData?.temperatureUnit}` : 'N/A'}</span>
+                          </div>
+                          <div className="h-4 bg-white/30 rounded-full relative">
+                            {resultData.weatherData?.temperature?.min !== null && resultData.weatherData?.temperature?.max !== null && (
+                              <>
+                                <div className="absolute top-[-24px] left-0 text-xs">Cold</div>
+                                <div className="absolute top-[-24px] right-0 text-xs">Hot</div>
+                                <div className="absolute top-[-24px] left-1/2 transform -translate-x-1/2 text-xs">Moderate</div>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </div>
+      </section>
+    </Layout>
+  );
+};
+
+export default Results;
