@@ -4,12 +4,9 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-<<<<<<< HEAD
+import { AuthProvider } from "./context/AuthContext";
 
 // Import Pages
-=======
-import { AuthProvider } from "./context/AuthContext";
->>>>>>> parent of f5a65cf (Merge pull request #9 from KDS2383/kartik)
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Recommendation from "./pages/Recommendation";
@@ -49,7 +46,3 @@ const App = () => (
 );
 
 export default App;
-<<<<<<< HEAD
-
-=======
->>>>>>> parent of f5a65cf (Merge pull request #9 from KDS2383/kartik)
