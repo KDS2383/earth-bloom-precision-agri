@@ -572,20 +572,24 @@ const Recommendation = () => {
       showConfirmButton: false, // Hide the default OK button
     });
 
-     // Helper to update Swal content
-      const updateSwalStep = (stepNumber: number, status: 'processing' | 'done' | 'warning' | 'error', text?: string) => {
+     // Helper to update Swal step - Fixed TypeScript errors by properly casting elements
+     const updateSwalStep = (stepNumber: number, status: 'processing' | 'done' | 'warning' | 'error', text?: string) => {
         const stepElement = Swal.getHtmlContainer()?.querySelector(`#swal-step${stepNumber}`);
         if (stepElement) {
           stepElement.textContent = `${stepNumber}. ${text || stepElement.textContent?.substring(3)}`; // Update text if provided
           if (status === 'done') stepElement.innerHTML = `✅ ${stepElement.textContent}`;
           else if (status === 'warning') stepElement.innerHTML = `⚠️ ${stepElement.textContent}`;
           else if (status === 'error') stepElement.innerHTML = `❌ ${stepElement.textContent}`;
-          else stepElement.style.color = 'black'; // Reset color for processing
+          else {
+            // Use setAttribute instead of direct style assignment
+            stepElement.setAttribute('style', 'color: black');
+          }
         }
          // Make next step grey initially
         const nextStepElement = Swal.getHtmlContainer()?.querySelector(`#swal-step${stepNumber + 1}`);
          if (nextStepElement && status === 'done') {
-           nextStepElement.style.color = 'black'; // Make next step active
+           // Use setAttribute instead of direct style assignment
+           nextStepElement.setAttribute('style', 'color: black');
         }
     };
 
