@@ -128,11 +128,23 @@ const fallbackResultData = {
 // Placeholder Image URL
 const PLACEHOLDER_IMAGE_URL = "https://via.placeholder.com/500x300?text=Image+Not+Available";
 
-// Helper function to map backend data to UI (Unchanged)
+// Helper function to map backend data to UI (Updated to include diseases)
 const mapBackendCropToUI = (backendCrop: any, index: number) => {
     const imageUrlFromApi = backendCrop.image_url;
-    return { id: index + 1, name: backendCrop.crop_name || "Unknown Crop",
-        image: imageUrlFromApi || PLACEHOLDER_IMAGE_URL, suitability: null, details: backendCrop, };
+    
+    // Extract diseases information if available or use default values
+    const diseases = backendCrop.diseases || [
+      { name: "No disease information available", symptoms: "N/A", treatment: "N/A" }
+    ];
+    
+    return { 
+      id: index + 1, 
+      name: backendCrop.crop_name || "Unknown Crop",
+      image: imageUrlFromApi || PLACEHOLDER_IMAGE_URL, 
+      suitability: null, 
+      details: backendCrop,
+      diseases: diseases
+    };
 };
 
 // --- Results Component ---
@@ -234,7 +246,7 @@ const Results = () => {
     const options: ChartOptions<'bar'> = {
       responsive: true, maintainAspectRatio: false, indexAxis: 'y',
       plugins: { legend: { display: false }, title: { display: true, text: 'Soil Nutrient Levels (ppm)' },
-        tooltip: { callbacks: { label: function(context) { return ` ${context.parsed.x !== null ? context.parsed.x : ''} ppm`; } } } },
+        tooltip: { callbacks: { label: function(context) { return ` ${context.parsed.x !== null ? context.parsed.x : ''} ppm`; } } },
       scales: { x: { beginAtZero: true, title: { display: true, text: 'Level (ppm)' }, }, y: { title: { display: false } }, },
     };
     return { nutrientChartData: data, nutrientChartOptions: options, hasNutrientDataForChart: true };
@@ -485,6 +497,40 @@ const Results = () => {
                                   </p>
                                 )}
                               </div>
+                              
+                              {/* NEW: Common Diseases Section */}
+                              <div>
+                                <h4 className="font-semibold">
+                                  Common Diseases
+                                </h4>
+                                {crop.diseases && crop.diseases.length > 0 ? (
+                                  <div className="space-y-3 mt-2">
+                                    {crop.diseases.slice(0, 3).map((disease, index) => (
+                                      <div key={index} className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3 rounded-md">
+                                        <p className="font-medium text-farm-primary mb-1">
+                                          {disease.name || "Unknown Disease"}
+                                        </p>
+                                        {disease.symptoms && (
+                                          <div className="mb-2">
+                                            <span className="text-xs font-medium text-gray-500 block">Symptoms:</span>
+                                            <p className="text-sm">{disease.symptoms}</p>
+                                          </div>
+                                        )}
+                                        {disease.treatment && (
+                                          <div>
+                                            <span className="text-xs font-medium text-gray-500 block">Treatment/Prevention:</span>
+                                            <p className="text-sm">{disease.treatment}</p>
+                                          </div>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <p className="text-gray-500 text-sm mt-2">
+                                    Disease information not available.
+                                  </p>
+                                )}
+                              </div>
                             </div>
                             <DialogFooter>
                               <Button className="bg-farm-primary hover:bg-farm-dark">
@@ -567,235 +613,4 @@ const Results = () => {
                       </div>
                       <div>
                         <h3 className="text-lg font-semibold mb-2">General Soil Considerations</h3>
-                        <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
-                           {typeof resultData.soilData?.ph === 'number' ? (
-                               <>
-                                   {resultData.soilData.ph >= 6.0 && resultData.soilData.ph <= 7.5 ? (
-                                       <li className="flex items-start gap-2">
-                                           <FaCheckCircle className="h-4 w-4 text-green-600 flex-shrink-0 mt-0.5" />
-                                           <span>Soil pH ({resultData.soilData.ph.toFixed(1)}) is near optimal.</span>
-                                       </li>
-                                   ) : resultData.soilData.ph < 6.0 ? (
-                                       <li className="flex items-start gap-2">
-                                           <FaExclamationTriangle className="h-4 w-4 text-orange-500 flex-shrink-0 mt-0.5" />
-                                           <span>Soil pH ({resultData.soilData.ph.toFixed(1)}) is acidic. Consider liming.</span>
-                                       </li>
-                                   ) : (
-                                       <li className="flex items-start gap-2">
-                                           <FaExclamationTriangle className="h-4 w-4 text-orange-500 flex-shrink-0 mt-0.5" />
-                                           <span>Soil pH ({resultData.soilData.ph.toFixed(1)}) is alkaline. Nutrient availability might be reduced.</span>
-                                       </li>
-                                   )}
-                               </>
-                           ) : (
-                               <li className="flex items-start gap-2 text-gray-500">
-                                   <FaInfoCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
-                                   <span>pH data not available.</span>
-                               </li>
-                           )}
-                           {typeof resultData.soilData?.nitrogen === 'number' && (
-                               <li className="flex items-start gap-2">
-                                  {getNutrientCategory('N', resultData.soilData.nitrogen).category === 'Low' ? <FaExclamationTriangle className="h-4 w-4 text-orange-500 flex-shrink-0 mt-0.5" /> : <FaCheckCircle className={`h-4 w-4 ${getNutrientCategory('N', resultData.soilData.nitrogen).colorClass} flex-shrink-0 mt-0.5`} />}
-                                   <span>Nitrogen level is <strong className={getNutrientCategory('N', resultData.soilData.nitrogen).colorClass}>{getNutrientCategory('N', resultData.soilData.nitrogen).category}</strong>. {getNutrientCategory('N', resultData.soilData.nitrogen).category === 'Low' ? 'Fertilization recommended.' : getNutrientCategory('N', resultData.soilData.nitrogen).category === 'High' ? 'Monitor crop growth.' : 'Generally adequate.'}</span>
-                               </li>
-                           )}
-                            {typeof resultData.soilData?.phosphorus === 'number' && (
-                               <li className="flex items-start gap-2">
-                                  {getNutrientCategory('P', resultData.soilData.phosphorus).category === 'Low' ? <FaExclamationTriangle className="h-4 w-4 text-orange-500 flex-shrink-0 mt-0.5" /> : <FaCheckCircle className={`h-4 w-4 ${getNutrientCategory('P', resultData.soilData.phosphorus).colorClass} flex-shrink-0 mt-0.5`} />}
-                                   <span>Phosphorus level is <strong className={getNutrientCategory('P', resultData.soilData.phosphorus).colorClass}>{getNutrientCategory('P', resultData.soilData.phosphorus).category}</strong>. {getNutrientCategory('P', resultData.soilData.phosphorus).category === 'Low' ? 'Consider P application.' : getNutrientCategory('P', resultData.soilData.phosphorus).category === 'High' ? 'May affect micronutrients.' : 'Generally adequate.'}</span>
-                               </li>
-                           )}
-                           {typeof resultData.soilData?.potassium === 'number' && (
-                               <li className="flex items-start gap-2">
-                                  {getNutrientCategory('K', resultData.soilData.potassium).category === 'Low' ? <FaExclamationTriangle className="h-4 w-4 text-orange-500 flex-shrink-0 mt-0.5" /> : <FaCheckCircle className={`h-4 w-4 ${getNutrientCategory('K', resultData.soilData.potassium).colorClass} flex-shrink-0 mt-0.5`} />}
-                                   <span>Potassium level is <strong className={getNutrientCategory('K', resultData.soilData.potassium).colorClass}>{getNutrientCategory('K', resultData.soilData.potassium).category}</strong>. {getNutrientCategory('K', resultData.soilData.potassium).category === 'Low' ? 'May need K supplement.' : getNutrientCategory('K', resultData.soilData.potassium).category === 'High' ? 'May affect Mg uptake.' : 'Generally adequate.'}</span>
-                               </li>
-                           )}
-                            {typeof resultData.soilData?.cec === 'number' ? (
-                                 <li className="flex items-start gap-2">
-                                      {resultData.soilData.cec < 10 ? <FaInfoCircle className="h-4 w-4 text-blue-500 flex-shrink-0 mt-0.5" /> : <FaCheckCircle className="h-4 w-4 text-green-600 flex-shrink-0 mt-0.5" />}
-                                      <span>CEC ({resultData.soilData.cec.toFixed(1)}) indicates {resultData.soilData.cec < 10 ? 'low' : resultData.soilData.cec > 25 ? 'high' : 'moderate'} nutrient holding capacity.</span>
-                                  </li>
-                             ): (
-                               <li className="flex items-start gap-2 text-gray-500">
-                                  <FaInfoCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
-                                  <span>CEC data not available.</span>
-                              </li>
-                             )}
-                           {/* Disclaimer */}
-                          <li className="flex items-start gap-2 pt-2 border-t mt-2 text-gray-500 dark:text-gray-400">
-                              <FaInfoCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
-                              <span>These are general interpretations. Local conditions and specific crop needs vary. A full soil test provides the most accurate guidance.</span>
-                          </li>
-                        </ul>
-                      </div>
-                    </div>
-
-                    {/* Right Column: Nutrient Analysis Chart and Bars */}
-                    <div>
-                      <div className="mb-8">
-                        <h3 className="text-lg font-semibold mb-4">Nutrient Level Indicators</h3>
-                        {resultData.soilData && (resultData.soilData.nitrogen !== null || resultData.soilData.phosphorus !== null || resultData.soilData.potassium !== null) ? (
-                          <div className="space-y-4">
-                            {resultData.soilData.nitrogen !== null && typeof resultData.soilData.nitrogen === 'number' && (
-                              <div>
-                                <span className="text-sm font-medium block mb-1">Nitrogen (N)</span>
-                                <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
-                                  <div className="bg-farm-primary h-2.5 rounded-full" title={`${resultData.soilData.nitrogen} ppm (${getNutrientCategory('N', resultData.soilData.nitrogen).category})`}
-                                    style={{ width: `${Math.min((resultData.soilData.nitrogen / 200) * 100, 100)}%` }}></div>
-                                </div>
-                              </div>
-                            )}
-                            {resultData.soilData.phosphorus !== null && typeof resultData.soilData.phosphorus === 'number' && (
-                               <div>
-                                 <span className="text-sm font-medium block mb-1">Phosphorus (P)</span>
-                                 <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
-                                   <div className="bg-farm-secondary h-2.5 rounded-full" title={`${resultData.soilData.phosphorus} ppm (${getNutrientCategory('P', resultData.soilData.phosphorus).category})`}
-                                      style={{ width: `${Math.min((resultData.soilData.phosphorus / 100) * 100, 100)}%` }}></div>
-                                 </div>
-                               </div>
-                            )}
-                            {resultData.soilData.potassium !== null && typeof resultData.soilData.potassium === 'number' && (
-                              <div>
-                                <span className="text-sm font-medium block mb-1">Potassium (K)</span>
-                                <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
-                                  <div className="bg-farm-accent h-2.5 rounded-full" title={`${resultData.soilData.potassium} ppm (${getNutrientCategory('K', resultData.soilData.potassium).category})`}
-                                    style={{ width: `${Math.min((resultData.soilData.potassium / 300) * 100, 100)}%` }}></div>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        ) : (
-                          <p className="text-gray-500 dark:text-gray-400">No detailed NPK nutrient data available.</p>
-                        )}
-                      </div>
-
-                      <div>
-                        <h3 className="text-lg font-semibold mb-2">Nutrient Comparison Chart</h3>
-                        {hasNutrientDataForChart && nutrientChartData && nutrientChartOptions ? (
-                          <div className="bg-white p-4 rounded-md border dark:bg-gray-800 dark:border-gray-700" style={{ height: '256px' }}>
-                            <Chart type='bar' data={nutrientChartData} options={nutrientChartOptions} />
-                          </div>
-                        ) : (
-                          <div className="bg-white p-4 rounded-md border h-64 flex items-center justify-center dark:bg-gray-800 dark:border-gray-700">
-                            <p className="text-gray-500 dark:text-gray-400 text-center">
-                              Nutrient data not sufficient<br />to display chart.
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* ================== Weather Data Tab Content ================== */}
-            <TabsContent value="weather" className="animate-fade-in">
-                 <Card>
-                <CardHeader>
-                  <CardTitle> Weather Conditions for {resultData.location} </CardTitle>
-                  <CardDescription> Climate analysis and forecast for optimal crop planning </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Left Column: Summary & Considerations */}
-                    <div>
-                      <h3 className="text-lg font-semibold mb-4"> Forecast Summary </h3>
-                      {resultData.weatherData && (resultData.weatherData.temperature?.avg !== null || resultData.weatherData.rainfall !== null || resultData.weatherData.humidity !== null || resultData.weatherData.windSpeed !== null) ? (
-                         <div className="grid grid-cols-2 gap-4">
-                           <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-md">
-                            <p className="text-sm text-gray-500"> Avg Temp </p>
-                            <p className="text-2xl font-semibold">
-                              {resultData.weatherData.temperature?.avg ?? "N/A"}
-                              {resultData.weatherData.temperature?.avg !== null ? resultData.weatherData.temperatureUnit : ''}
-                            </p>
-                            {resultData.weatherData.temperature?.min !== null && resultData.weatherData.temperature?.max !== null && (
-                                <p className="text-xs text-gray-500 mt-1"> ({resultData.weatherData.temperature.min} - {resultData.weatherData.temperature.max}){resultData.weatherData.temperatureUnit} </p>
-                              )}
-                          </div>
-                          <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-md">
-                            <p className="text-sm text-gray-500"> Total Rainfall </p>
-                            <p className="text-2xl font-semibold">
-                              {resultData.weatherData.rainfall ?? "N/A"}
-                              {resultData.weatherData.rainfall !== null ? resultData.weatherData.precipitationUnit : ''}
-                            </p>
-                            {resultData.weatherData.rainfall !== null && ( <p className="text-xs text-gray-500 mt-1"> Over forecast </p> )}
-                          </div>
-                          <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-md">
-                            <p className="text-sm text-gray-500"> Avg Humidity </p>
-                            <p className="text-2xl font-semibold">
-                              {resultData.weatherData.humidity ?? "N/A"}
-                              {resultData.weatherData.humidity !== null ? resultData.weatherData.humidityUnit : ''}
-                            </p>
-                          </div>
-                          <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-md">
-                            <p className="text-sm text-gray-500"> Avg Wind Speed </p>
-                            <p className="text-2xl font-semibold">
-                              {resultData.weatherData.windSpeed ?? "N/A"}
-                              {resultData.weatherData.windSpeed !== null ? resultData.weatherData.windSpeedUnit : ''}
-                            </p>
-                          </div>
-                         </div>
-                      ) : ( <p className="text-gray-500"> No summary weather data available. </p> )}
-
-                      {/* Climate Considerations (UPDATED) */}
-                      <div className="mt-6">
-                        <h3 className="text-lg font-semibold mb-2"> Climate Considerations </h3>
-                        <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
-                          {climateConsiderations.map((item, index) => (
-                            <li key={index} className={`flex items-start gap-2 ${item.type === 'info' ? 'text-gray-600 dark:text-gray-400' : ''}`}>
-                              {item.type === 'good' && <FaCheckCircle className="h-4 w-4 text-green-600 flex-shrink-0 mt-0.5" />}
-                              {item.type === 'warning' && <FaExclamationTriangle className="h-4 w-4 text-orange-500 flex-shrink-0 mt-0.5" />}
-                              {item.type === 'info' && <FaInfoCircle className="h-4 w-4 text-blue-500 flex-shrink-0 mt-0.5" />}
-                              <span>{item.text}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    </div>
-
-                    {/* Right Column: Chart & Impact */}
-                    <div>
-                      <h3 className="text-lg font-semibold mb-4"> Daily Forecast Chart </h3>
-                       {hasWeatherDataForChart && weatherChartData && weatherChartOptions ? (
-                        <div className="bg-white p-4 rounded-md border dark:bg-gray-800 dark:border-gray-700" style={{ height: "256px" }} >
-                          <Chart type="bar" data={weatherChartData} options={weatherChartOptions} />
-                        </div>
-                      ) : (
-                        <div className="bg-white p-4 rounded-md border h-64 flex items-center justify-center dark:bg-gray-800 dark:border-gray-700">
-                          <p className="text-gray-500 dark:text-gray-400 text-center"> Forecast data not available to display chart. </p>
-                        </div>
-                      )}
-
-                      <div className="mt-6">
-                        <h3 className="text-lg font-semibold mb-2"> Weather Impact on Recommended Crops </h3>
-                        {resultData.recommendations.length > 0 ? (
-                         <div className="space-y-3">
-                            {resultData.recommendations.map((crop, index) => (
-                              <div key={index} className="p-3 border rounded-md dark:border-gray-700" >
-                                <div className="flex items-center justify-between">
-                                  <p className="font-medium">{crop.name}</p>
-                                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${ index === 0 ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200" : index === 1 ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200" : "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200" }`} >
-                                    {index === 0 ? "High Suitability" : index === 1 ? "Moderate Suitability" : "Fair Suitability"}
-                                  </span>
-                                </div>
-                                <p className="text-sm mt-1 text-gray-600 dark:text-gray-400"> Consider specific weather needs from details. </p>
-                              </div> ))}
-                         </div>
-                        ) : ( <div className="p-3 border rounded-md text-gray-500 dark:border-gray-700"> No recommended crops to show weather impact. </div> )}
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-          </Tabs>
-        </div>
-      </section>
-    </Layout>
-  );
-};
-
-export default Results;
+                        <ul className="space-y-2 text-sm text-gray-600 dark:text-

@@ -11,6 +11,7 @@ import {
   saveUserWeatherData 
 } from "@/services/firebase/userService";
 import { collection, doc, getFirestore, setDoc } from "firebase/firestore";
+import { db } from "@/firebase"; // Ensure proper import
 
 export interface WeatherData {
   location: string;
