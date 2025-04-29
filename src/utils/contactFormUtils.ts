@@ -1,11 +1,13 @@
 
 import { saveUserContactSubmission } from "@/services/firebase/userService";
-import { useAuth } from "@/context/AuthContext";
+import { auth } from "@/firebase";
+import { User } from "firebase/auth";
 
 export const handleContactFormSubmit = async (
   name: string,
   email: string,
   message: string,
+  currentUser: User | null,
   onSuccess: () => void,
   onError: (error: any) => void
 ) => {
@@ -18,11 +20,8 @@ export const handleContactFormSubmit = async (
       timestamp: new Date().toLocaleString(),
     };
     
-    // Try to get the current user
-    const auth = useAuth();
-    
     // If user is logged in, save to their profile
-    if (auth.user) {
+    if (currentUser) {
       await saveUserContactSubmission(contactSubmission);
     }
     
