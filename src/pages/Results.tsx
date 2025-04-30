@@ -31,6 +31,7 @@ import {
   PointElement,
   LineElement,
   BarElement, // Ensure BarElement is imported
+  BarController, // **Import BarController**
   Title,
   Tooltip,
   Legend,
@@ -42,7 +43,7 @@ import { Chart } from "react-chartjs-2";
 
 // Icons for considerations and diseases
 import { FaCheckCircle, FaExclamationTriangle, FaInfoCircle } from "react-icons/fa";
-import { TestTube, FlaskConical, Biohazard } from "lucide-react"; // Replace Virus with Biohazard
+import { TestTube, FlaskConical, Biohazard } from "lucide-react"; // Import disease icons (Changed Virus to Biohazard)
 
 // Register Chart.js components
 ChartJS.register(
@@ -51,6 +52,7 @@ ChartJS.register(
   PointElement,
   LineElement,
   BarElement, // Ensure BarElement is registered
+  BarController, // **Register BarController**
   Title,
   Tooltip,
   Legend
@@ -463,7 +465,7 @@ const Results = () => {
                               {/* ==================== START: IMPROVED DISEASE SECTION ==================== */}
                               <div>
                                 <h4 className="font-semibold text-base flex items-center gap-2 mb-3">
-                                  <Biohazard className="h-5 w-5 text-red-600" />
+                                  <Biohazard className="h-5 w-5 text-red-600" /> {/* Changed Virus to Biohazard */}
                                   Potential Disease Risks
                                 </h4>
                                 {/* Access detailed 'diseases' list from crop.details */}
