@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from "react";
 import { useLocation } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
@@ -41,7 +40,7 @@ import { Chart } from "react-chartjs-2";
 
 // Icons for considerations
 import { FaCheckCircle, FaExclamationTriangle, FaInfoCircle } from "react-icons/fa";
-import { TestTube, FlaskConical, Virus } from "lucide-react";
+import { TestTube, FlaskConical } from "lucide-react";
 
 // Register Chart.js components
 ChartJS.register(
@@ -160,11 +159,11 @@ const Results = () => {
          ph: soilDataFromState?.ph ?? fallbackResultData.soilData.ph,
          texture: soilDataFromState?.texture ?? fallbackResultData.soilData.texture,
          nitrogen: soilDataFromState?.nitrogen ?? fallbackResultData.soilData.nitrogen,
-         phosphorus: soilDataFromState?.phosphorus ?? fallbackResultData.phosphorus,
-         potassium: soilDataFromState?.potassium ?? fallbackResultData.potassium,
-         organic: soilDataFromState?.organic ?? fallbackResultData.organic,
-         cec: soilDataFromState?.cec ?? fallbackResultData.cec,
-         moisture: soilDataFromState?.moisture ?? fallbackResultData.moisture,
+         phosphorus: soilDataFromState?.phosphorus ?? fallbackResultData.soilData.phosphorus,
+         potassium: soilDataFromState?.potassium ?? fallbackResultData.soilData.potassium,
+         organic: soilDataFromState?.organic ?? fallbackResultData.soilData.organic,
+         cec: soilDataFromState?.cec ?? fallbackResultData.soilData.cec,
+         moisture: soilDataFromState?.moisture ?? fallbackResultData.soilData.moisture,
          nutrients: {
              nitrogen: soilDataFromState?.nitrogen ?? fallbackResultData.soilData.nutrients.nitrogen,
              phosphorus: soilDataFromState?.phosphorus ?? fallbackResultData.soilData.nutrients.phosphorus,
@@ -511,7 +510,7 @@ const Results = () => {
                               {/* Common Diseases Section - IMPROVED UI */}
                               <div>
                                 <h4 className="font-semibold text-base flex items-center gap-2 mb-3">
-                                  <Virus className="h-5 w-5 text-red-600" />
+                                  <FlaskConical className="h-5 w-5 text-red-600" />
                                   Potential Disease Risks
                                 </h4>
                                 {/* Access diseases details list */}
