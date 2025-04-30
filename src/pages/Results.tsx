@@ -42,7 +42,7 @@ import { Chart } from "react-chartjs-2";
 
 // Icons for considerations
 import { FaCheckCircle, FaExclamationTriangle, FaInfoCircle } from "react-icons/fa";
-
+import { TestTube, FlaskConical, Virus } from "lucide-react";
 
 // Register Chart.js components
 ChartJS.register(
@@ -163,11 +163,11 @@ const Results = () => {
          ph: soilDataFromState?.ph ?? fallbackResultData.soilData.ph,
          texture: soilDataFromState?.texture ?? fallbackResultData.soilData.texture,
          nitrogen: soilDataFromState?.nitrogen ?? fallbackResultData.soilData.nitrogen,
-         phosphorus: soilDataFromState?.phosphorus ?? fallbackResultData.soilData.phosphorus,
-         potassium: soilDataFromState?.potassium ?? fallbackResultData.soilData.potassium,
-         organic: soilDataFromState?.organic ?? fallbackResultData.soilData.organic,
-         cec: soilDataFromState?.cec ?? fallbackResultData.soilData.cec,
-         moisture: soilDataFromState?.moisture ?? fallbackResultData.soilData.moisture,
+         phosphorus: soilDataFromState?.phosphorus ?? fallbackResultData.phosphorus,
+         potassium: soilDataFromState?.potassium ?? fallbackResultData.potassium,
+         organic: soilDataFromState?.organic ?? fallbackResultData.organic,
+         cec: soilDataFromState?.cec ?? fallbackResultData.cec,
+         moisture: soilDataFromState?.moisture ?? fallbackResultData.moisture,
          nutrients: {
              nitrogen: soilDataFromState?.nitrogen ?? fallbackResultData.soilData.nutrients.nitrogen,
              phosphorus: soilDataFromState?.phosphorus ?? fallbackResultData.soilData.nutrients.phosphorus,
@@ -430,12 +430,12 @@ const Results = () => {
                                <h4 className="text-xs font-semibold text-red-700 dark:text-red-400 mb-1">Potential Disease Risk:</h4>
                                <ul className="text-sm space-y-0.5">
                                    {/* Use predicted_diseases for the preview */}
-                                   {crop.details.predicted_diseases.slice(0, 1).map((diseaseName: string, index: number) => ( // Show only top 1 preview
+                                   {crop.details.predicted_diseases.slice(0, 3).map((diseaseName: string, index: number) => ( 
                                        <li key={index} className="text-red-600 dark:text-red-400 truncate flex items-center gap-1" title={diseaseName}>
                                          <FaExclamationTriangle className="inline-block flex-shrink-0 h-3 w-3"/> {diseaseName}
                                        </li>
                                    ))}
-                                   {crop.details.predicted_diseases.length > 1 && (
+                                   {crop.details.predicted_diseases.length > 3 && (
                                       <li className="text-xs text-gray-400 italic">...more in details</li>
                                    )}
                                </ul>
@@ -497,38 +497,62 @@ const Results = () => {
                                 ) : ( <p className="text-gray-500 text-sm mt-2"> Expected yield data not available. </p> )}
                               </div>
 
-                              {/* Common Diseases Section */}
+                              {/* Common Diseases Section - IMPROVED UI */}
                               <div>
-                                <h4 className="font-semibold text-base"> Potential Disease Risks </h4>
+                                <h4 className="font-semibold text-base flex items-center gap-2 mb-3"> 
+                                  <Virus className="h-5 w-5 text-red-600" /> 
+                                  Potential Disease Risks 
+                                </h4>
                                 {/* Access diseases details list */}
                                 {crop.details?.diseases && crop.details.diseases.length > 0 ? (
-                                  <div className="mt-2 space-y-2">
-                                    <p className="text-xs text-gray-500 dark:text-gray-400">Based on current conditions, the following diseases pose a potential risk:</p>
-                                    {crop.details.diseases.map((disease: any, index: number) => (
-                                      <div key={index} className="bg-red-50 dark:bg-red-900/30 border-l-4 border-red-400 dark:border-red-600 p-3 rounded-r-md">
-                                        <p className="font-medium text-red-700 dark:text-red-300 mb-1 flex items-center gap-2">
-                                          <FaExclamationTriangle/> {disease.name || "Unknown Disease"}
-                                        </p>
-                                        {disease.symptoms && disease.symptoms !== 'Not Available' && ( // Check if symptom data exists
-                                          <div className="mb-1">
-                                            <span className="text-xs font-semibold text-gray-600 dark:text-gray-400 block">Symptoms:</span>
-                                            <p className="text-sm text-gray-800 dark:text-gray-200">{disease.symptoms}</p>
+                                  <div className="mt-2 space-y-4">
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Based on current conditions, the following diseases pose a potential risk:</p>
+                                    <div className="grid grid-cols-1 gap-4">
+                                      {crop.details.diseases.map((disease: any, index: number) => (
+                                        <div key={index} className="bg-white dark:bg-gray-800 rounded-lg border border-red-200 dark:border-red-900 overflow-hidden shadow-sm">
+                                          <div className="bg-gradient-to-r from-red-500 to-red-600 px-4 py-2">
+                                            <h5 className="text-white font-semibold flex items-center gap-2">
+                                              <FaExclamationTriangle className="h-4 w-4"/> 
+                                              {disease.name || "Unknown Disease"}
+                                            </h5>
                                           </div>
-                                        )}
-                                        {disease.treatment && disease.treatment !== 'Not Available' && ( // Check if treatment data exists
-                                          <div>
-                                            <span className="text-xs font-semibold text-gray-600 dark:text-gray-400 block">Treatment/Prevention:</span>
-                                            <p className="text-sm text-gray-800 dark:text-gray-200">{disease.treatment}</p>
+                                          
+                                          <div className="p-4 space-y-3">
+                                            {disease.symptoms && disease.symptoms !== 'Not Available' && (
+                                              <div className="border-b border-gray-200 dark:border-gray-700 pb-3">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                  <span className="bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 text-xs px-2 py-1 rounded-md font-semibold inline-flex items-center gap-1">
+                                                    <TestTube className="h-3 w-3" /> Symptoms
+                                                  </span>
+                                                </div>
+                                                <p className="text-sm text-gray-700 dark:text-gray-300">{disease.symptoms}</p>
+                                              </div>
+                                            )}
+                                            
+                                            {disease.treatment && disease.treatment !== 'Not Available' && (
+                                              <div>
+                                                <div className="flex items-center gap-2 mb-1">
+                                                  <span className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 text-xs px-2 py-1 rounded-md font-semibold inline-flex items-center gap-1">
+                                                    <FlaskConical className="h-3 w-3" /> Treatment
+                                                  </span>
+                                                </div>
+                                                <p className="text-sm text-gray-700 dark:text-gray-300">{disease.treatment}</p>
+                                              </div>
+                                            )}
+                                            
+                                            {(!disease.symptoms || disease.symptoms === 'Not Available') && 
+                                             (!disease.treatment || disease.treatment === 'Not Available') && (
+                                              <p className="text-sm italic text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/50 p-3 rounded-md">
+                                                Further details not available in database.
+                                              </p>
+                                            )}
                                           </div>
-                                        )}
-                                         {(!disease.symptoms || disease.symptoms === 'Not Available') && (!disease.treatment || disease.treatment === 'Not Available') && (
-                                             <p className="text-sm italic text-gray-500 dark:text-gray-400">Further details not available in database.</p>
-                                         )}
-                                      </div>
-                                    ))}
+                                        </div>
+                                      ))}
+                                    </div>
                                   </div>
                                 ) : (
-                                  <p className="text-gray-500 dark:text-gray-400 text-sm mt-2">
+                                  <p className="text-gray-500 dark:text-gray-400 text-sm mt-2 bg-gray-50 dark:bg-gray-800 p-4 rounded-md border border-gray-200 dark:border-gray-700">
                                     No specific high-risk diseases identified based on current conditions and available data.
                                   </p>
                                 )}
@@ -544,289 +568,5 @@ const Results = () => {
                       </CardFooter>
                     </Card>
                   ))
-                ) : ( /* ... No recommendations found message ... */
-                  <div className="md:col-span-3 text-center text-gray-500 p-8 border rounded-md">
-                    {location.state
-                      ? "No crop recommendations found for the provided conditions."
-                      : "Loading recommendations..."}
-                  </div>
-                 )}
-            </div>
-          </TabsContent>
-
-          {/* ================== Soil Data Tab Content ================== */}
-           <TabsContent value="soil" className="animate-fade-in">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Soil Analysis for {resultData.location}</CardTitle>
-                  <CardDescription>
-                    Based on the data provided for analysis.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Left Column: General Properties & Recommendations */}
-                    <div>
-                      <div className="mb-6">
-                        <h3 className="text-lg font-semibold mb-2">General Properties</h3>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                          <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded-md">
-                            <p className="text-sm text-gray-500">pH Level</p>
-                            <p className="text-xl font-semibold">
-                              {typeof resultData.soilData?.ph === 'number' ? resultData.soilData.ph.toFixed(1) : 'N/A'}
-                            </p>
-                          </div>
-                          <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded-md">
-                            <p className="text-sm text-gray-500">Nitrogen (N)</p>
-                            <p className="text-xl font-semibold">
-                              {resultData.soilData?.nitrogen ?? 'N/A'}
-                              {resultData.soilData?.nitrogen !== null ? <span className="text-xs"> ppm</span> : ''}
-                            </p>
-                          </div>
-                          <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded-md">
-                            <p className="text-sm text-gray-500">Phosphorus (P)</p>
-                             <p className="text-xl font-semibold">
-                              {resultData.soilData?.phosphorus ?? 'N/A'}
-                               {resultData.soilData?.phosphorus !== null ? <span className="text-xs"> ppm</span> : ''}
-                             </p>
-                          </div>
-                           <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded-md">
-                              <p className="text-sm text-gray-500">CEC</p>
-                              <p className="text-xl font-semibold">
-                                {resultData.soilData?.cec ?? 'N/A'}
-                                {resultData.soilData?.cec !== null ? <span className="text-xs"> meq/100g</span> : ''}
-                              </p>
-                           </div>
-                           <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded-md">
-                              <p className="text-sm text-gray-500">Moisture</p>
-                              <p className="text-xl font-semibold">
-                                {resultData.soilData?.moisture ?? 'N/A'}
-                                {resultData.soilData?.moisture !== null ? <span className="text-xs"> %</span> : ''}
-                              </p>
-                           </div>
-                           <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded-md">
-                             <p className="text-sm text-gray-500">Potassium (K)</p>
-                             <p className="text-xl font-semibold">
-                                 {resultData.soilData?.potassium ?? 'N/A'}
-                                 {resultData.soilData?.potassium !== null ? <span className="text-xs"> ppm</span> : ''}
-                             </p>
-                           </div>
-                        </div>
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-semibold mb-2">General Soil Considerations</h3>
-                        <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
-                           {typeof resultData.soilData?.ph === 'number' ? (
-                               <>
-                                   {resultData.soilData.ph >= 6.0 && resultData.soilData.ph <= 7.5 ? (
-                                       <li className="flex items-start gap-2">
-                                           <FaCheckCircle className="h-4 w-4 text-green-600 flex-shrink-0 mt-0.5" />
-                                           <span>Soil pH ({resultData.soilData.ph.toFixed(1)}) is near optimal.</span>
-                                       </li>
-                                   ) : resultData.soilData.ph < 6.0 ? (
-                                       <li className="flex items-start gap-2">
-                                           <FaExclamationTriangle className="h-4 w-4 text-orange-500 flex-shrink-0 mt-0.5" />
-                                           <span>Soil pH ({resultData.soilData.ph.toFixed(1)}) is acidic. Consider liming.</span>
-                                       </li>
-                                   ) : (
-                                       <li className="flex items-start gap-2">
-                                           <FaExclamationTriangle className="h-4 w-4 text-orange-500 flex-shrink-0 mt-0.5" />
-                                           <span>Soil pH ({resultData.soilData.ph.toFixed(1)}) is alkaline. Nutrient availability might be reduced.</span>
-                                       </li>
-                                   )}
-                               </>
-                           ) : (
-                               <li className="flex items-start gap-2 text-gray-500">
-                                   <FaInfoCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
-                                   <span>pH data not available.</span>
-                               </li>
-                           )}
-                           {typeof resultData.soilData?.nitrogen === 'number' && (
-                               <li className="flex items-start gap-2">
-                                  {getNutrientCategory('N', resultData.soilData.nitrogen).category === 'Low' ? <FaExclamationTriangle className="h-4 w-4 text-orange-500 flex-shrink-0 mt-0.5" /> : <FaCheckCircle className={`h-4 w-4 ${getNutrientCategory('N', resultData.soilData.nitrogen).colorClass} flex-shrink-0 mt-0.5`} />}
-                                   <span>Nitrogen level is <strong className={getNutrientCategory('N', resultData.soilData.nitrogen).colorClass}>{getNutrientCategory('N', resultData.soilData.nitrogen).category}</strong>. {getNutrientCategory('N', resultData.soilData.nitrogen).category === 'Low' ? 'Fertilization recommended.' : getNutrientCategory('N', resultData.soilData.nitrogen).category === 'High' ? 'Monitor crop growth.' : 'Generally adequate.'}</span>
-                               </li>
-                           )}
-                            {typeof resultData.soilData?.phosphorus === 'number' && (
-                               <li className="flex items-start gap-2">
-                                  {getNutrientCategory('P', resultData.soilData.phosphorus).category === 'Low' ? <FaExclamationTriangle className="h-4 w-4 text-orange-500 flex-shrink-0 mt-0.5" /> : <FaCheckCircle className={`h-4 w-4 ${getNutrientCategory('P', resultData.soilData.phosphorus).colorClass} flex-shrink-0 mt-0.5`} />}
-                                   <span>Phosphorus level is <strong className={getNutrientCategory('P', resultData.soilData.phosphorus).colorClass}>{getNutrientCategory('P', resultData.soilData.phosphorus).category}</strong>. {getNutrientCategory('P', resultData.soilData.phosphorus).category === 'Low' ? 'Consider P application.' : getNutrientCategory('P', resultData.soilData.phosphorus).category === 'High' ? 'May affect micronutrients.' : 'Generally adequate.'}</span>
-                               </li>
-                           )}
-                           {typeof resultData.soilData?.potassium === 'number' && (
-                               <li className="flex items-start gap-2">
-                                  {getNutrientCategory('K', resultData.soilData.potassium).category === 'Low' ? <FaExclamationTriangle className="h-4 w-4 text-orange-500 flex-shrink-0 mt-0.5" /> : <FaCheckCircle className={`h-4 w-4 ${getNutrientCategory('K', resultData.soilData.potassium).colorClass} flex-shrink-0 mt-0.5`} />}
-                                   <span>Potassium level is <strong className={getNutrientCategory('K', resultData.soilData.potassium).colorClass}>{getNutrientCategory('K', resultData.soilData.potassium).category}</strong>. {getNutrientCategory('K', resultData.soilData.potassium).category === 'Low' ? 'May need K supplement.' : getNutrientCategory('K', resultData.soilData.potassium).category === 'High' ? 'May affect Mg uptake.' : 'Generally adequate.'}</span>
-                               </li>
-                           )}
-                            {typeof resultData.soilData?.cec === 'number' ? (
-                                 <li className="flex items-start gap-2">
-                                      {resultData.soilData.cec < 10 ? <FaInfoCircle className="h-4 w-4 text-blue-500 flex-shrink-0 mt-0.5" /> : <FaCheckCircle className="h-4 w-4 text-green-600 flex-shrink-0 mt-0.5" />}
-                                      <span>CEC ({resultData.soilData.cec.toFixed(1)}) indicates {resultData.soilData.cec < 10 ? 'low' : resultData.soilData.cec > 25 ? 'high' : 'moderate'} nutrient holding capacity.</span>
-                                  </li>
-                             ): (
-                               <li className="flex items-start gap-2 text-gray-500">
-                                  <FaInfoCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
-                                  <span>CEC data not available.</span>
-                              </li>
-                             )}
-                           <li className="flex items-start gap-2 pt-2 border-t mt-2 text-gray-500 dark:text-gray-400">
-                              <FaInfoCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
-                              <span>These are general interpretations. Local conditions and specific crop needs vary. A full soil test provides the most accurate guidance.</span>
-                          </li>
-                        </ul>
-                      </div>
-                    </div>
-                    
-                    {/* Right Column: Nutrient Info & Chart */}
-                    <div>
-                      <div className="mb-6">
-                        <h3 className="text-lg font-semibold mb-2">Soil Nutrients Analysis</h3>
-                        {hasNutrientDataForChart ? (
-                          <div className="aspect-video rounded-md border dark:border-gray-800 bg-muted/20 p-2 relative">
-                            <Chart type="bar" data={nutrientChartData} options={nutrientChartOptions} />
-                          </div>
-                        ) : (
-                          <div className="aspect-video flex items-center justify-center rounded-md border dark:border-gray-800 bg-muted/20">
-                            <p className="text-muted-foreground text-sm">Insufficient nutrient data available for chart.</p>
-                          </div>
-                        )}
-                      </div>
-
-                      <div>
-                        <h3 className="text-lg font-semibold mb-2">Nutrient Levels</h3>
-                        <div className="grid grid-cols-3 gap-4">
-                          {['N', 'P', 'K'].map((nutrient) => {
-                            const value = nutrient === 'N' ? resultData.soilData?.nitrogen :
-                                        nutrient === 'P' ? resultData.soilData?.phosphorus :
-                                        resultData.soilData?.potassium;
-                            const { category, colorClass } = getNutrientCategory(nutrient as 'N' | 'P' | 'K', value);
-                            return (
-                              <div key={nutrient} className="bg-gray-50 dark:bg-gray-800 p-3 rounded-md border border-gray-100 dark:border-gray-700">
-                                <p className="text-sm text-gray-500">
-                                  {nutrient === 'N' ? 'Nitrogen' : nutrient === 'P' ? 'Phosphorus' : 'Potassium'}
-                                </p>
-                                <div className="flex justify-between items-center mt-1">
-                                  <span className="font-medium">{value !== null ? `${value} ppm` : 'N/A'}</span>
-                                  <span className={`text-sm font-medium ${colorClass}`}>{category}</span>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-          {/* ================== Weather Data Tab Content ================== */}
-          <TabsContent value="weather" className="animate-fade-in">
-                 <Card>
-                <CardHeader>
-                  <CardTitle>Weather Data for {resultData.location}</CardTitle>
-                  <CardDescription>
-                    Weather forecast and climate considerations for farming
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Left Column: Weather Chart */}
-                    <div>
-                      <h3 className="text-lg font-semibold mb-3">Weather Forecast</h3>
-                      {hasWeatherDataForChart ? (
-                        <div className="aspect-video rounded-md border dark:border-gray-800 bg-muted/20 p-2 mb-4">
-                          <Chart type="bar" data={weatherChartData} options={weatherChartOptions} />
-                        </div>
-                      ) : (
-                        <div className="aspect-video flex items-center justify-center rounded-md border dark:border-gray-800 bg-muted/20 mb-4">
-                          <p className="text-muted-foreground text-sm">Weather forecast data not available.</p>
-                        </div>
-                      )}
-                      
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                        <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-md">
-                          <p className="text-sm text-gray-500">Average Temperature</p>
-                          <p className="text-xl font-semibold">
-                            {resultData.weatherData?.temperature?.avg ?? 'N/A'}
-                            {resultData.weatherData?.temperature?.avg !== null ? <span className="text-xs"> {resultData.weatherData?.temperatureUnit}</span> : ''}
-                          </p>
-                        </div>
-                        <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-md">
-                          <p className="text-sm text-gray-500">Humidity</p>
-                          <p className="text-xl font-semibold">
-                            {resultData.weatherData?.humidity ?? 'N/A'}
-                            {resultData.weatherData?.humidity !== null ? <span className="text-xs"> {resultData.weatherData?.humidityUnit}</span> : ''}
-                          </p>
-                        </div>
-                        <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-md">
-                          <p className="text-sm text-gray-500">Rainfall</p>
-                          <p className="text-xl font-semibold">
-                            {resultData.weatherData?.rainfall ?? 'N/A'}
-                            {resultData.weatherData?.rainfall !== null ? <span className="text-xs"> {resultData.weatherData?.precipitationUnit}</span> : ''}
-                          </p>
-                        </div>
-                        <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-md">
-                          <p className="text-sm text-gray-500">Wind Speed</p>
-                          <p className="text-xl font-semibold">
-                            {resultData.weatherData?.windSpeed ?? 'N/A'}
-                            {resultData.weatherData?.windSpeed !== null ? <span className="text-xs"> {resultData.weatherData?.windSpeedUnit}</span> : ''}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* Right Column: Climate Considerations */}
-                    <div>
-                      <h3 className="text-lg font-semibold mb-3">Climate Considerations</h3>
-                      <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-md border border-gray-200 dark:border-gray-700">
-                        <div className="space-y-4">
-                          {climateConsiderations.map((consideration, index) => (
-                            <div key={index} className="flex gap-3">
-                              {consideration.type === 'warning' && (
-                                <FaExclamationTriangle className="text-amber-500 shrink-0 mt-1" />
-                              )}
-                              {consideration.type === 'good' && (
-                                <FaCheckCircle className="text-green-500 shrink-0 mt-1" />
-                              )}
-                              {consideration.type === 'info' && (
-                                <FaInfoCircle className="text-blue-500 shrink-0 mt-1" />
-                              )}
-                              <p className="text-sm">{consideration.text}</p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                      
-                      <div className="mt-6">
-                        <h3 className="text-lg font-semibold mb-3">Temperature Range</h3>
-                        <div className="p-4 rounded-md bg-gradient-to-r from-blue-500 via-green-400 to-red-500 text-white">
-                          <div className="flex justify-between mb-2">
-                            <span>Min: {resultData.weatherData?.temperature?.min !== null ? `${resultData.weatherData?.temperature?.min}${resultData.weatherData?.temperatureUnit}` : 'N/A'}</span>
-                            <span>Max: {resultData.weatherData?.temperature?.max !== null ? `${resultData.weatherData?.temperature?.max}${resultData.weatherData?.temperatureUnit}` : 'N/A'}</span>
-                          </div>
-                          <div className="h-4 bg-white/30 rounded-full relative">
-                            {resultData.weatherData?.temperature?.min !== null && resultData.weatherData?.temperature?.max !== null && (
-                              <>
-                                <div className="absolute top-[-24px] left-0 text-xs">Cold</div>
-                                <div className="absolute top-[-24px] right-0 text-xs">Hot</div>
-                                <div className="absolute top-[-24px] left-1/2 transform -translate-x-1/2 text-xs">Moderate</div>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
-        </div>
-      </section>
-    </Layout>
-  );
-};
-
-export default Results;
+                ) : (
+                  <div className="md:col-span-3 text-center text-gray-5
