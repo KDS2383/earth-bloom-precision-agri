@@ -293,53 +293,53 @@ const Results = () => {
       return { category: 'Medium', colorClass: 'text-green-600' };
   };
 
-  // Helper to generate Climate Considerations (Unchanged)
-  const climateConsiderations = useMemo(() => {
-      const considerations: { text: string, type: 'info' | 'warning' | 'good' }[] = [];
-      const weather = resultData.weatherData;
-      if (!weather || !weather.temperature || weather.temperature.avg === null) {
-          return [{ text: "Detailed climate consideration data not available.", type: 'info' as const }];
-      }
-      const avgTemp = parseFloat(weather.temperature.avg);
-      const minTemp = weather.temperature.min;
-      const maxTemp = weather.temperature.max;
-      const rainfall = parseFloat(weather.rainfall);
-      const forecastDays = weather.dailyForecast?.time?.length || 16;
-      const avgDailyRain = forecastDays > 0 ? rainfall / forecastDays : 0;
-      const humidity = parseFloat(weather.humidity);
-      const wind = parseFloat(weather.windSpeed);
+   // Helper to generate Climate Considerations (Unchanged)
+    const climateConsiderations = useMemo(() => {
+        const considerations: { text: string, type: 'info' | 'warning' | 'good' }[] = [];
+        const weather = resultData.weatherData;
+        if (!weather || !weather.temperature || weather.temperature.avg === null) {
+            return [{ text: "Detailed climate consideration data not available.", type: 'info' as const }];
+        }
+        const avgTemp = parseFloat(weather.temperature.avg);
+        const minTemp = weather.temperature.min;
+        const maxTemp = weather.temperature.max;
+        const rainfall = parseFloat(weather.rainfall);
+        const forecastDays = weather.dailyForecast?.time?.length || 16;
+        const avgDailyRain = forecastDays > 0 ? rainfall / forecastDays : 0;
+        const humidity = parseFloat(weather.humidity);
+        const wind = parseFloat(weather.windSpeed);
 
-      if (!isNaN(avgTemp)) {
-          if (avgTemp > 30) considerations.push({ text: `High average temperatures (${avgTemp}°C) forecast; ensure heat tolerance or mitigation.`, type: 'warning' });
-          else if (avgTemp < 15) considerations.push({ text: `Low average temperatures (${avgTemp}°C) forecast; ensure cold tolerance.`, type: 'warning' });
-          else considerations.push({ text: `Average temperature (${avgTemp}°C) appears moderate for many crops.`, type: 'good' });
-      }
-      if (minTemp !== null && typeof minTemp === 'number' && minTemp < 10) { considerations.push({ text: `Low minimum temperatures (${minTemp}°C) pose frost risk for sensitive crops.`, type: 'warning' }); }
-      if (maxTemp !== null && typeof maxTemp === 'number' && maxTemp > 35) { considerations.push({ text: `High maximum temperatures (${maxTemp}°C) may cause heat stress.`, type: 'warning' }); }
-      if (!isNaN(rainfall)) {
-           if (avgDailyRain > 10) considerations.push({ text: `High rainfall forecast (~${avgDailyRain.toFixed(1)} mm/day); ensure good drainage.`, type: 'warning' });
-           else if (avgDailyRain < 2) considerations.push({ text: `Low rainfall forecast (~${avgDailyRain.toFixed(1)} mm/day); irrigation likely required.`, type: 'warning' });
-           else considerations.push({ text: `Moderate rainfall expected (~${avgDailyRain.toFixed(1)} mm/day); monitor soil moisture.`, type: 'info' });
-      }
-      if (!isNaN(humidity)) {
-           if (humidity > 80) considerations.push({ text: `High average humidity (${humidity}%) forecast; increased risk of fungal diseases.`, type: 'warning' });
-           else if (humidity < 40) considerations.push({ text: `Low average humidity (${humidity}%) forecast; may increase water needs.`, type: 'warning' });
-           else considerations.push({ text: `Average humidity (${humidity}%) appears moderate.`, type: 'info' });
-      }
-      if (!isNaN(wind)) {
-           if (wind > 20) considerations.push({ text: `High average wind speeds (~${wind} km/h) forecast; consider wind protection.`, type: 'warning' });
-           else considerations.push({ text: `Average wind speeds (~${wind} km/h) appear moderate.`, type: 'info' });
-      }
-      if (considerations.length > 0) { considerations.push({ text: "These interpretations are based on the forecast period. Actual conditions and specific crop needs may vary.", type: 'info'}); }
-      return considerations.length > 0 ? considerations : [{ text: "Climate consideration data not available.", type: 'info' as const }];
-  }, [resultData.weatherData]);
+        if (!isNaN(avgTemp)) {
+            if (avgTemp > 30) considerations.push({ text: `High average temperatures (${avgTemp}°C) forecast; ensure heat tolerance or mitigation.`, type: 'warning' });
+            else if (avgTemp < 15) considerations.push({ text: `Low average temperatures (${avgTemp}°C) forecast; ensure cold tolerance.`, type: 'warning' });
+            else considerations.push({ text: `Average temperature (${avgTemp}°C) appears moderate for many crops.`, type: 'good' });
+        }
+        if (minTemp !== null && typeof minTemp === 'number' && minTemp < 10) { considerations.push({ text: `Low minimum temperatures (${minTemp}°C) pose frost risk for sensitive crops.`, type: 'warning' }); }
+        if (maxTemp !== null && typeof maxTemp === 'number' && maxTemp > 35) { considerations.push({ text: `High maximum temperatures (${maxTemp}°C) may cause heat stress.`, type: 'warning' }); }
+        if (!isNaN(rainfall)) {
+             if (avgDailyRain > 10) considerations.push({ text: `High rainfall forecast (~${avgDailyRain.toFixed(1)} mm/day); ensure good drainage.`, type: 'warning' });
+             else if (avgDailyRain < 2) considerations.push({ text: `Low rainfall forecast (~${avgDailyRain.toFixed(1)} mm/day); irrigation likely required.`, type: 'warning' });
+             else considerations.push({ text: `Moderate rainfall expected (~${avgDailyRain.toFixed(1)} mm/day); monitor soil moisture.`, type: 'info' });
+        }
+        if (!isNaN(humidity)) {
+             if (humidity > 80) considerations.push({ text: `High average humidity (${humidity}%) forecast; increased risk of fungal diseases.`, type: 'warning' });
+             else if (humidity < 40) considerations.push({ text: `Low average humidity (${humidity}%) forecast; may increase water needs.`, type: 'warning' });
+             else considerations.push({ text: `Average humidity (${humidity}%) appears moderate.`, type: 'info' });
+        }
+        if (!isNaN(wind)) {
+             if (wind > 20) considerations.push({ text: `High average wind speeds (~${wind} km/h) forecast; consider wind protection.`, type: 'warning' });
+             else considerations.push({ text: `Average wind speeds (~${wind} km/h) appear moderate.`, type: 'info' });
+        }
+        if (considerations.length > 0) { considerations.push({ text: "These interpretations are based on the forecast period. Actual conditions and specific crop needs may vary.", type: 'info'}); }
+        return considerations.length > 0 ? considerations : [{ text: "Climate consideration data not available.", type: 'info' as const }];
+    }, [resultData.weatherData]);
 
   return (
     <Layout>
       <section className="py-12 bg-farm-cream">
         <div className="container">
           {/* Header and Download Button */}
-          <div className="text-center mb-12">
+           <div className="text-center mb-12">
             <h1 className="text-3xl md:text-4xl font-bold mb-4 text-farm-dark">
               Your Farming Recommendations
             </h1>
