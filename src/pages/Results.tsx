@@ -106,7 +106,6 @@ const calculateWeatherDataSummary = (weatherData: any) => {
   };
 };
 
-
 // Define fallback/default data structure (Unchanged)
 const fallbackResultData = {
   location: "Analyzed Location",
@@ -124,7 +123,6 @@ const fallbackResultData = {
   recommendations: [], // Will hold mapped data including 'details' (which contains diseases)
   processingTime: null,
 };
-
 
 // Placeholder Image URL
 const PLACEHOLDER_IMAGE_URL = "https://via.placeholder.com/500x300?text=Image+Not+Available";
@@ -190,7 +188,6 @@ const Results = () => {
     }
   }, [location.state]);
 
-
   // --- Weather Chart Data and Options (Unchanged) ---
   const { chartData: weatherChartData, chartOptions: weatherChartOptions, hasWeatherDataForChart } = useMemo(() => {
     const daily = resultData.weatherData?.dailyForecast;
@@ -236,7 +233,6 @@ const Results = () => {
     };
     return { chartData: data, chartOptions: options, hasWeatherDataForChart: true };
   }, [resultData.weatherData]);
-
 
   // --- Nutrient Chart Data and Options (Unchanged) ---
   const { nutrientChartData, nutrientChartOptions, hasNutrientDataForChart } = useMemo(() => {
@@ -297,54 +293,53 @@ const Results = () => {
       return { category: 'Medium', colorClass: 'text-green-600' };
   };
 
-   // Helper to generate Climate Considerations (Unchanged)
-    const climateConsiderations = useMemo(() => {
-        const considerations: { text: string, type: 'info' | 'warning' | 'good' }[] = [];
-        const weather = resultData.weatherData;
-        if (!weather || !weather.temperature || weather.temperature.avg === null) {
-            return [{ text: "Detailed climate consideration data not available.", type: 'info' as const }];
-        }
-        const avgTemp = parseFloat(weather.temperature.avg);
-        const minTemp = weather.temperature.min;
-        const maxTemp = weather.temperature.max;
-        const rainfall = parseFloat(weather.rainfall);
-        const forecastDays = weather.dailyForecast?.time?.length || 16;
-        const avgDailyRain = forecastDays > 0 ? rainfall / forecastDays : 0;
-        const humidity = parseFloat(weather.humidity);
-        const wind = parseFloat(weather.windSpeed);
+  // Helper to generate Climate Considerations (Unchanged)
+  const climateConsiderations = useMemo(() => {
+      const considerations: { text: string, type: 'info' | 'warning' | 'good' }[] = [];
+      const weather = resultData.weatherData;
+      if (!weather || !weather.temperature || weather.temperature.avg === null) {
+          return [{ text: "Detailed climate consideration data not available.", type: 'info' as const }];
+      }
+      const avgTemp = parseFloat(weather.temperature.avg);
+      const minTemp = weather.temperature.min;
+      const maxTemp = weather.temperature.max;
+      const rainfall = parseFloat(weather.rainfall);
+      const forecastDays = weather.dailyForecast?.time?.length || 16;
+      const avgDailyRain = forecastDays > 0 ? rainfall / forecastDays : 0;
+      const humidity = parseFloat(weather.humidity);
+      const wind = parseFloat(weather.windSpeed);
 
-        if (!isNaN(avgTemp)) {
-            if (avgTemp > 30) considerations.push({ text: `High average temperatures (${avgTemp}°C) forecast; ensure heat tolerance or mitigation.`, type: 'warning' });
-            else if (avgTemp < 15) considerations.push({ text: `Low average temperatures (${avgTemp}°C) forecast; ensure cold tolerance.`, type: 'warning' });
-            else considerations.push({ text: `Average temperature (${avgTemp}°C) appears moderate for many crops.`, type: 'good' });
-        }
-        if (minTemp !== null && typeof minTemp === 'number' && minTemp < 10) { considerations.push({ text: `Low minimum temperatures (${minTemp}°C) pose frost risk for sensitive crops.`, type: 'warning' }); }
-        if (maxTemp !== null && typeof maxTemp === 'number' && maxTemp > 35) { considerations.push({ text: `High maximum temperatures (${maxTemp}°C) may cause heat stress.`, type: 'warning' }); }
-        if (!isNaN(rainfall)) {
-             if (avgDailyRain > 10) considerations.push({ text: `High rainfall forecast (~${avgDailyRain.toFixed(1)} mm/day); ensure good drainage.`, type: 'warning' });
-             else if (avgDailyRain < 2) considerations.push({ text: `Low rainfall forecast (~${avgDailyRain.toFixed(1)} mm/day); irrigation likely required.`, type: 'warning' });
-             else considerations.push({ text: `Moderate rainfall expected (~${avgDailyRain.toFixed(1)} mm/day); monitor soil moisture.`, type: 'info' });
-        }
-        if (!isNaN(humidity)) {
-             if (humidity > 80) considerations.push({ text: `High average humidity (${humidity}%) forecast; increased risk of fungal diseases.`, type: 'warning' });
-             else if (humidity < 40) considerations.push({ text: `Low average humidity (${humidity}%) forecast; may increase water needs.`, type: 'warning' });
-             else considerations.push({ text: `Average humidity (${humidity}%) appears moderate.`, type: 'info' });
-        }
-        if (!isNaN(wind)) {
-             if (wind > 20) considerations.push({ text: `High average wind speeds (~${wind} km/h) forecast; consider wind protection.`, type: 'warning' });
-             else considerations.push({ text: `Average wind speeds (~${wind} km/h) appear moderate.`, type: 'info' });
-        }
-        if (considerations.length > 0) { considerations.push({ text: "These interpretations are based on the forecast period. Actual conditions and specific crop needs may vary.", type: 'info'}); }
-        return considerations.length > 0 ? considerations : [{ text: "Climate consideration data not available.", type: 'info' as const }];
-    }, [resultData.weatherData]);
-
+      if (!isNaN(avgTemp)) {
+          if (avgTemp > 30) considerations.push({ text: `High average temperatures (${avgTemp}°C) forecast; ensure heat tolerance or mitigation.`, type: 'warning' });
+          else if (avgTemp < 15) considerations.push({ text: `Low average temperatures (${avgTemp}°C) forecast; ensure cold tolerance.`, type: 'warning' });
+          else considerations.push({ text: `Average temperature (${avgTemp}°C) appears moderate for many crops.`, type: 'good' });
+      }
+      if (minTemp !== null && typeof minTemp === 'number' && minTemp < 10) { considerations.push({ text: `Low minimum temperatures (${minTemp}°C) pose frost risk for sensitive crops.`, type: 'warning' }); }
+      if (maxTemp !== null && typeof maxTemp === 'number' && maxTemp > 35) { considerations.push({ text: `High maximum temperatures (${maxTemp}°C) may cause heat stress.`, type: 'warning' }); }
+      if (!isNaN(rainfall)) {
+           if (avgDailyRain > 10) considerations.push({ text: `High rainfall forecast (~${avgDailyRain.toFixed(1)} mm/day); ensure good drainage.`, type: 'warning' });
+           else if (avgDailyRain < 2) considerations.push({ text: `Low rainfall forecast (~${avgDailyRain.toFixed(1)} mm/day); irrigation likely required.`, type: 'warning' });
+           else considerations.push({ text: `Moderate rainfall expected (~${avgDailyRain.toFixed(1)} mm/day); monitor soil moisture.`, type: 'info' });
+      }
+      if (!isNaN(humidity)) {
+           if (humidity > 80) considerations.push({ text: `High average humidity (${humidity}%) forecast; increased risk of fungal diseases.`, type: 'warning' });
+           else if (humidity < 40) considerations.push({ text: `Low average humidity (${humidity}%) forecast; may increase water needs.`, type: 'warning' });
+           else considerations.push({ text: `Average humidity (${humidity}%) appears moderate.`, type: 'info' });
+      }
+      if (!isNaN(wind)) {
+           if (wind > 20) considerations.push({ text: `High average wind speeds (~${wind} km/h) forecast; consider wind protection.`, type: 'warning' });
+           else considerations.push({ text: `Average wind speeds (~${wind} km/h) appear moderate.`, type: 'info' });
+      }
+      if (considerations.length > 0) { considerations.push({ text: "These interpretations are based on the forecast period. Actual conditions and specific crop needs may vary.", type: 'info'}); }
+      return considerations.length > 0 ? considerations : [{ text: "Climate consideration data not available.", type: 'info' as const }];
+  }, [resultData.weatherData]);
 
   return (
     <Layout>
       <section className="py-12 bg-farm-cream">
         <div className="container">
           {/* Header and Download Button */}
-           <div className="text-center mb-12">
+          <div className="text-center mb-12">
             <h1 className="text-3xl md:text-4xl font-bold mb-4 text-farm-dark">
               Your Farming Recommendations
             </h1>
@@ -399,7 +394,7 @@ const Results = () => {
 
             {/* Crops Tab Content */}
             <TabsContent value="crops" className="animate-fade-in">
-               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {resultData.recommendations.length > 0 ? (
                   resultData.recommendations.map((crop) => ( // crop now includes 'details' which has 'diseases'
                     <Card key={crop.id} className="farm-card overflow-hidden flex flex-col"> {/* Added flex flex-col */}
@@ -427,22 +422,22 @@ const Results = () => {
                          {/* Access predicted_diseases from crop.details */}
                          {crop.details?.predicted_diseases && crop.details.predicted_diseases.length > 0 && (
                            <div className="mt-1">
-                               <h4 className="text-xs font-semibold text-red-700 dark:text-red-400 mb-1">Potential Disease Risk:</h4>
-                               <ul className="text-sm space-y-0.5">
-                                   {/* Use predicted_diseases for the preview */}
-                                   {crop.details.predicted_diseases.slice(0, 3).map((diseaseName: string, index: number) => ( 
-                                       <li key={index} className="text-red-600 dark:text-red-400 truncate flex items-center gap-1" title={diseaseName}>
-                                         <FaExclamationTriangle className="inline-block flex-shrink-0 h-3 w-3"/> {diseaseName}
-                                       </li>
-                                   ))}
-                                   {crop.details.predicted_diseases.length > 3 && (
-                                      <li className="text-xs text-gray-400 italic">...more in details</li>
-                                   )}
-                               </ul>
+                             <h4 className="text-xs font-semibold text-red-700 dark:text-red-400 mb-1">Potential Disease Risk:</h4>
+                             <ul className="text-sm space-y-0.5">
+                               {/* Use predicted_diseases for the preview */}
+                               {crop.details.predicted_diseases.slice(0, 3).map((diseaseName: string, index: number) => ( 
+                                 <li key={index} className="text-red-600 dark:text-red-400 truncate flex items-center gap-1" title={diseaseName}>
+                                   <FaExclamationTriangle className="inline-block flex-shrink-0 h-3 w-3"/> {diseaseName}
+                                 </li>
+                               ))}
+                               {crop.details.predicted_diseases.length > 3 && (
+                                 <li className="text-xs text-gray-400 italic">...more in details</li>
+                               )}
+                             </ul>
                            </div>
-                       )}
+                         )}
                       </CardContent>
-                       <CardFooter>
+                      <CardFooter>
                         <Dialog>
                           <DialogTrigger asChild>
                             <Button variant="outline" className="w-full">
@@ -462,57 +457,63 @@ const Results = () => {
                             {/* Content inside the Dialog */}
                             <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-4"> {/* Added scroll */}
                               {/* Growing Information */}
-                              <h4 className="font-semibold text-base"> Growing Information </h4>
+                              <h4 className="font-semibold text-base">Growing Information</h4>
                               {crop.details?.growing_info ? (
                                 <div className="grid grid-cols-2 gap-2 text-sm">
-                                   <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded-md">
-                                    <p className="font-medium text-farm-primary mb-1"> Growing Season </p>
-                                    <p> {crop.details.growing_info.growing_season || "N/A"} </p>
+                                  <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded-md">
+                                    <p className="font-medium text-farm-primary mb-1">Growing Season</p>
+                                    <p>{crop.details.growing_info.growing_season || "N/A"}</p>
                                   </div>
                                   <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded-md">
-                                    <p className="font-medium text-farm-primary mb-1"> Water Needs </p>
-                                    <p> {crop.details.growing_info.water_needs || "N/A"} </p>
+                                    <p className="font-medium text-farm-primary mb-1">Water Needs</p>
+                                    <p>{crop.details.growing_info.water_needs || "N/A"}</p>
                                   </div>
                                   <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded-md">
-                                    <p className="font-medium text-farm-primary mb-1"> Soil Preference </p>
-                                    <p> {crop.details.growing_info.soil_preference || "N/A"} </p>
+                                    <p className="font-medium text-farm-primary mb-1">Soil Preference</p>
+                                    <p>{crop.details.growing_info.soil_preference || "N/A"}</p>
                                   </div>
                                   <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded-md">
-                                    <p className="font-medium text-farm-primary mb-1"> Harvest Time </p>
-                                    <p> {crop.details.growing_info.harvest_time || "N/A"} </p>
+                                    <p className="font-medium text-farm-primary mb-1">Harvest Time</p>
+                                    <p>{crop.details.growing_info.harvest_time || "N/A"}</p>
                                   </div>
                                 </div>
-                              ) : ( <p className="text-gray-500 text-sm"> Growing information not available. </p> )}
+                              ) : (
+                                <p className="text-gray-500 text-sm">Growing information not available.</p>
+                              )}
 
                               {/* Expected Yield */}
                               <div>
-                                <h4 className="font-semibold text-base"> Expected Yield </h4>
+                                <h4 className="font-semibold text-base">Expected Yield</h4>
                                 {crop.details?.expected_yield ? (
                                   <div className="bg-farm-light p-4 rounded-md mt-2">
                                     <p className="text-2xl font-bold text-farm-primary">
                                       {crop.details.expected_yield.in_tons_per_acre ?? "N/A"}
-                                      <span className="text-base font-normal"> tons/acre </span>
+                                      <span className="text-base font-normal"> tons/acre</span>
                                     </p>
                                   </div>
-                                ) : ( <p className="text-gray-500 text-sm mt-2"> Expected yield data not available. </p> )}
+                                ) : (
+                                  <p className="text-gray-500 text-sm mt-2">Expected yield data not available.</p>
+                                )}
                               </div>
 
                               {/* Common Diseases Section - IMPROVED UI */}
                               <div>
-                                <h4 className="font-semibold text-base flex items-center gap-2 mb-3"> 
-                                  <Virus className="h-5 w-5 text-red-600" /> 
-                                  Potential Disease Risks 
+                                <h4 className="font-semibold text-base flex items-center gap-2 mb-3">
+                                  <Virus className="h-5 w-5 text-red-600" />
+                                  Potential Disease Risks
                                 </h4>
                                 {/* Access diseases details list */}
                                 {crop.details?.diseases && crop.details.diseases.length > 0 ? (
                                   <div className="mt-2 space-y-4">
-                                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Based on current conditions, the following diseases pose a potential risk:</p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                                      Based on current conditions, the following diseases pose a potential risk:
+                                    </p>
                                     <div className="grid grid-cols-1 gap-4">
                                       {crop.details.diseases.map((disease: any, index: number) => (
                                         <div key={index} className="bg-white dark:bg-gray-800 rounded-lg border border-red-200 dark:border-red-900 overflow-hidden shadow-sm">
                                           <div className="bg-gradient-to-r from-red-500 to-red-600 px-4 py-2">
                                             <h5 className="text-white font-semibold flex items-center gap-2">
-                                              <FaExclamationTriangle className="h-4 w-4"/> 
+                                              <FaExclamationTriangle className="h-4 w-4" />
                                               {disease.name || "Unknown Disease"}
                                             </h5>
                                           </div>
@@ -569,4 +570,4 @@ const Results = () => {
                     </Card>
                   ))
                 ) : (
-                  <div className="md:col-span-3 text-center text-gray-5
+                  <div className="md:col-span-3 text-center text-gray-50
