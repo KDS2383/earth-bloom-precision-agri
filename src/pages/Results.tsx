@@ -1,5 +1,6 @@
-// src/pages/Results.tsx
 
+import React, { useState, useEffect, useMemo } from "react";
+import { useLocation } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,8 +21,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { useState, useEffect, useMemo } from "react";
-import { useLocation } from "react-router-dom";
 
 // Import Chart.js components and types
 import {
@@ -30,7 +29,7 @@ import {
   LinearScale,
   PointElement,
   LineElement,
-  BarElement, // Ensure BarElement is imported
+  BarElement, 
   Title,
   Tooltip,
   Legend,
@@ -50,7 +49,7 @@ ChartJS.register(
   LinearScale,
   PointElement,
   LineElement,
-  BarElement, // Ensure BarElement is registered
+  BarElement,
   Title,
   Tooltip,
   Legend
@@ -178,7 +177,10 @@ const Results = () => {
       const weatherDataFromState = stateData.weather;
       const processedWeatherData = calculateWeatherDataSummary(weatherDataFromState) || fallbackResultData.weatherData;
       const locationFromState = stateData.location || fallbackResultData.location;
-      setResultData({ location: locationFromState, soilData: processedSoilData, weatherData: processedWeatherData,
+      setResultData({ 
+        location: locationFromState, 
+        soilData: processedSoilData, 
+        weatherData: processedWeatherData,
         recommendations: mappedRecommendations, // Set the mapped recommendations
         processingTime: processingTime !== undefined && processingTime !== null ? Number(processingTime) : fallbackResultData.processingTime,
       });
@@ -314,8 +316,12 @@ const Results = () => {
             else if (avgTemp < 15) considerations.push({ text: `Low average temperatures (${avgTemp}°C) forecast; ensure cold tolerance.`, type: 'warning' });
             else considerations.push({ text: `Average temperature (${avgTemp}°C) appears moderate for many crops.`, type: 'good' });
         }
-        if (minTemp !== null && typeof minTemp === 'number' && minTemp < 10) { considerations.push({ text: `Low minimum temperatures (${minTemp}°C) pose frost risk for sensitive crops.`, type: 'warning' }); }
-        if (maxTemp !== null && typeof maxTemp === 'number' && maxTemp > 35) { considerations.push({ text: `High maximum temperatures (${maxTemp}°C) may cause heat stress.`, type: 'warning' }); }
+        if (minTemp !== null && typeof minTemp === 'number' && minTemp < 10) { 
+            considerations.push({ text: `Low minimum temperatures (${minTemp}°C) pose frost risk for sensitive crops.`, type: 'warning' }); 
+        }
+        if (maxTemp !== null && typeof maxTemp === 'number' && maxTemp > 35) { 
+            considerations.push({ text: `High maximum temperatures (${maxTemp}°C) may cause heat stress.`, type: 'warning' }); 
+        }
         if (!isNaN(rainfall)) {
              if (avgDailyRain > 10) considerations.push({ text: `High rainfall forecast (~${avgDailyRain.toFixed(1)} mm/day); ensure good drainage.`, type: 'warning' });
              else if (avgDailyRain < 2) considerations.push({ text: `Low rainfall forecast (~${avgDailyRain.toFixed(1)} mm/day); irrigation likely required.`, type: 'warning' });
@@ -330,7 +336,9 @@ const Results = () => {
              if (wind > 20) considerations.push({ text: `High average wind speeds (~${wind} km/h) forecast; consider wind protection.`, type: 'warning' });
              else considerations.push({ text: `Average wind speeds (~${wind} km/h) appear moderate.`, type: 'info' });
         }
-        if (considerations.length > 0) { considerations.push({ text: "These interpretations are based on the forecast period. Actual conditions and specific crop needs may vary.", type: 'info'}); }
+        if (considerations.length > 0) { 
+            considerations.push({ text: "These interpretations are based on the forecast period. Actual conditions and specific crop needs may vary.", type: 'info'}); 
+        }
         return considerations.length > 0 ? considerations : [{ text: "Climate consideration data not available.", type: 'info' as const }];
     }, [resultData.weatherData]);
 
@@ -359,7 +367,11 @@ const Results = () => {
               className="bg-farm-accent text-farm-dark hover:bg-farm-accent/80 font-medium"
               onClick={handleDownloadReport}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2"> <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/> <polyline points="7 10 12 15 17 10"/> <line x1="12" y1="15" x2="12" y2="3"/> </svg>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2"> 
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/> 
+                <polyline points="7 10 12 15 17 10"/> 
+                <line x1="12" y1="15" x2="12" y2="3"/> 
+              </svg>
               Download Report
             </Button>
           </div>
@@ -397,7 +409,7 @@ const Results = () => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {resultData.recommendations.length > 0 ? (
                   resultData.recommendations.map((crop) => ( // crop now includes 'details' which has 'diseases'
-                    <Card key={crop.id} className="farm-card overflow-hidden flex flex-col"> {/* Added flex flex-col */}
+                    <Card key={crop.id} className="farm-card overflow-hidden flex flex-col">
                       <div className="h-48 overflow-hidden relative">
                         <img
                           src={crop.image}
@@ -410,32 +422,32 @@ const Results = () => {
                           }}
                         />
                       </div>
-                      <CardHeader className="pb-2"> {/* Reduced bottom padding */}
+                      <CardHeader className="pb-2">
                         <CardTitle>{crop.name}</CardTitle>
                         <CardDescription>
                           Recommended crop for your conditions
                         </CardDescription>
                       </CardHeader>
-                       {/* Added CardContent for disease preview */}
-                      <CardContent className="flex-grow pt-2"> {/* Added padding-top and flex-grow */}
-                         {/* Disease Preview on Card */}
-                         {/* Access predicted_diseases from crop.details */}
-                         {crop.details?.predicted_diseases && crop.details.predicted_diseases.length > 0 && (
-                           <div className="mt-1">
-                             <h4 className="text-xs font-semibold text-red-700 dark:text-red-400 mb-1">Potential Disease Risk:</h4>
-                             <ul className="text-sm space-y-0.5">
-                               {/* Use predicted_diseases for the preview */}
-                               {crop.details.predicted_diseases.slice(0, 3).map((diseaseName: string, index: number) => ( 
-                                 <li key={index} className="text-red-600 dark:text-red-400 truncate flex items-center gap-1" title={diseaseName}>
-                                   <FaExclamationTriangle className="inline-block flex-shrink-0 h-3 w-3"/> {diseaseName}
-                                 </li>
-                               ))}
-                               {crop.details.predicted_diseases.length > 3 && (
-                                 <li className="text-xs text-gray-400 italic">...more in details</li>
-                               )}
-                             </ul>
-                           </div>
-                         )}
+                      {/* Added CardContent for disease preview */}
+                      <CardContent className="flex-grow pt-2">
+                        {/* Disease Preview on Card */}
+                        {/* Access predicted_diseases from crop.details */}
+                        {crop.details?.predicted_diseases && crop.details.predicted_diseases.length > 0 && (
+                          <div className="mt-1">
+                            <h4 className="text-xs font-semibold text-red-700 dark:text-red-400 mb-1">Potential Disease Risk:</h4>
+                            <ul className="text-sm space-y-0.5">
+                              {/* Use predicted_diseases for the preview */}
+                              {crop.details.predicted_diseases.slice(0, 3).map((diseaseName: string, index: number) => ( 
+                                <li key={index} className="text-red-600 dark:text-red-400 truncate flex items-center gap-1" title={diseaseName}>
+                                  <FaExclamationTriangle className="inline-block flex-shrink-0 h-3 w-3"/> {diseaseName}
+                                </li>
+                              ))}
+                              {crop.details.predicted_diseases.length > 3 && (
+                                <li className="text-xs text-gray-400 italic">...more in details</li>
+                              )}
+                            </ul>
+                          </div>
+                        )}
                       </CardContent>
                       <CardFooter>
                         <Dialog>
@@ -455,7 +467,7 @@ const Results = () => {
                               </DialogDescription>
                             </DialogHeader>
                             {/* Content inside the Dialog */}
-                            <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-4"> {/* Added scroll */}
+                            <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-4">
                               {/* Growing Information */}
                               <h4 className="font-semibold text-base">Growing Information</h4>
                               {crop.details?.growing_info ? (
@@ -570,4 +582,218 @@ const Results = () => {
                     </Card>
                   ))
                 ) : (
-                  <div className="md:col-span-3 text-center text-gray-50
+                  <div className="md:col-span-3 text-center text-gray-500">
+                    <div className="p-8 bg-gray-50 rounded-lg">
+                      <p className="text-xl">No crop recommendations available.</p>
+                      <p className="mt-2">Please submit soil data to generate crop recommendations.</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+
+            {/* Soil Data Tab Content */}
+            <TabsContent value="soil">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Soil Properties Card */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Soil Properties</CardTitle>
+                    <CardDescription>Analysis of your soil sample</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-gray-50 p-4 rounded-md">
+                          <p className="text-sm font-medium text-gray-500">pH Level</p>
+                          <p className="text-2xl font-bold">{resultData.soilData?.ph ?? 'N/A'}</p>
+                        </div>
+                        <div className="bg-gray-50 p-4 rounded-md">
+                          <p className="text-sm font-medium text-gray-500">Soil Texture</p>
+                          <p className="text-2xl font-bold">{resultData.soilData?.texture ?? 'N/A'}</p>
+                        </div>
+                      </div>
+
+                      {/* Nutrients Section */}
+                      <div className="pt-4 border-t">
+                        <h4 className="font-medium text-base mb-3">Nutrient Levels</h4>
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-center">
+                            <span className="font-medium">Nitrogen (N)</span>
+                            <span className={getNutrientCategory('N', resultData.soilData?.nitrogen).colorClass}>
+                              {resultData.soilData?.nitrogen ?? 'N/A'} ppm
+                              <span className="text-gray-500 ml-2">
+                                ({getNutrientCategory('N', resultData.soilData?.nitrogen).category})
+                              </span>
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="font-medium">Phosphorus (P)</span>
+                            <span className={getNutrientCategory('P', resultData.soilData?.phosphorus).colorClass}>
+                              {resultData.soilData?.phosphorus ?? 'N/A'} ppm
+                              <span className="text-gray-500 ml-2">
+                                ({getNutrientCategory('P', resultData.soilData?.phosphorus).category})
+                              </span>
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="font-medium">Potassium (K)</span>
+                            <span className={getNutrientCategory('K', resultData.soilData?.potassium).colorClass}>
+                              {resultData.soilData?.potassium ?? 'N/A'} ppm
+                              <span className="text-gray-500 ml-2">
+                                ({getNutrientCategory('K', resultData.soilData?.potassium).category})
+                              </span>
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Nutrient Chart */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Nutrient Visualization</CardTitle>
+                    <CardDescription>Visual representation of soil nutrient levels</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-64 w-full">
+                      {hasNutrientDataForChart ? (
+                        <Chart type="bar" data={nutrientChartData} options={nutrientChartOptions} />
+                      ) : (
+                        <div className="h-full flex items-center justify-center">
+                          <p className="text-gray-500">No nutrient data available for visualization</p>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Soil Recommendations */}
+                <Card className="md:col-span-2">
+                  <CardHeader>
+                    <CardTitle>Soil Recommendations</CardTitle>
+                    <CardDescription>Suggested actions based on your soil analysis</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ul className="space-y-2">
+                      {resultData.soilData?.soilRecommendations && resultData.soilData.soilRecommendations.length > 0 ? (
+                        resultData.soilData.soilRecommendations.map((rec, idx) => (
+                          <li key={idx} className="bg-gray-50 p-3 rounded flex items-start gap-2">
+                            <FaCheckCircle className="text-green-500 mt-1 flex-shrink-0" />
+                            <span>{rec}</span>
+                          </li>
+                        ))
+                      ) : (
+                        <li className="text-gray-500">No soil recommendations available</li>
+                      )}
+                    </ul>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+
+            {/* Weather Data Tab Content */}
+            <TabsContent value="weather">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Weather Overview */}
+                <Card className="md:col-span-3">
+                  <CardHeader>
+                    <CardTitle>Weather Forecast</CardTitle>
+                    <CardDescription>Temperature and precipitation forecast for your location</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-80">
+                      {hasWeatherDataForChart ? (
+                        <Chart type="bar" data={weatherChartData} options={weatherChartOptions} />
+                      ) : (
+                        <div className="h-full flex items-center justify-center">
+                          <p className="text-gray-500">No weather data available for visualization</p>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Weather Summary */}
+                <Card className="md:col-span-3">
+                  <CardHeader>
+                    <CardTitle>Weather Summary</CardTitle>
+                    <CardDescription>Key weather metrics for farming decisions</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="bg-gray-50 p-4 rounded-md text-center">
+                        <p className="text-sm font-medium text-gray-500">Average Temperature</p>
+                        <p className="text-2xl font-bold">
+                          {resultData.weatherData?.temperature?.avg ?? 'N/A'}
+                          <span className="text-sm font-normal ml-1">{resultData.weatherData?.temperatureUnit}</span>
+                        </p>
+                      </div>
+                      <div className="bg-gray-50 p-4 rounded-md text-center">
+                        <p className="text-sm font-medium text-gray-500">Total Rainfall</p>
+                        <p className="text-2xl font-bold">
+                          {resultData.weatherData?.rainfall ?? 'N/A'}
+                          <span className="text-sm font-normal ml-1">{resultData.weatherData?.precipitationUnit}</span>
+                        </p>
+                      </div>
+                      <div className="bg-gray-50 p-4 rounded-md text-center">
+                        <p className="text-sm font-medium text-gray-500">Average Humidity</p>
+                        <p className="text-2xl font-bold">
+                          {resultData.weatherData?.humidity ?? 'N/A'}
+                          <span className="text-sm font-normal ml-1">{resultData.weatherData?.humidityUnit}</span>
+                        </p>
+                      </div>
+                      <div className="bg-gray-50 p-4 rounded-md text-center">
+                        <p className="text-sm font-medium text-gray-500">Average Wind Speed</p>
+                        <p className="text-2xl font-bold">
+                          {resultData.weatherData?.windSpeed ?? 'N/A'}
+                          <span className="text-sm font-normal ml-1">{resultData.weatherData?.windSpeedUnit}</span>
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Climate Considerations */}
+                <Card className="md:col-span-3">
+                  <CardHeader>
+                    <CardTitle>Climate Considerations</CardTitle>
+                    <CardDescription>Impact of weather conditions on farming</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ul className="space-y-3">
+                      {climateConsiderations.map((consideration, idx) => (
+                        <li key={idx} className={`bg-gray-50 p-3 rounded-md flex items-start gap-3 ${
+                          consideration.type === 'warning' 
+                            ? 'border-l-4 border-orange-500' 
+                            : consideration.type === 'good'
+                              ? 'border-l-4 border-green-500'
+                              : 'border-l-4 border-blue-500'
+                        }`}>
+                          {consideration.type === 'warning' && (
+                            <FaExclamationTriangle className="text-orange-500 mt-1 flex-shrink-0" />
+                          )}
+                          {consideration.type === 'good' && (
+                            <FaCheckCircle className="text-green-500 mt-1 flex-shrink-0" />
+                          )}
+                          {consideration.type === 'info' && (
+                            <FaInfoCircle className="text-blue-500 mt-1 flex-shrink-0" />
+                          )}
+                          <span>{consideration.text}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </div>
+      </section>
+    </Layout>
+  );
+};
+
+export default Results;
