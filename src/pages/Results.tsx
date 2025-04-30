@@ -32,6 +32,7 @@ import {
   LineElement,
   BarElement, // Ensure BarElement is imported
   BarController, // **Import BarController**
+  LineController,
   Title,
   Tooltip,
   Legend,
@@ -51,6 +52,7 @@ ChartJS.register(
   LinearScale,
   PointElement,
   LineElement,
+  LineController,
   BarElement, // Ensure BarElement is registered
   BarController, // **Register BarController**
   Title,
