@@ -523,10 +523,15 @@ const Recommendation = () => {
     e.preventDefault(); // Prevent default form submission
 
     if (!validateForm()) {
+      Swal.fire({
+        title: "Validation Error",
+        text: "Please fill all required fields correctly.",
+        icon: "error",
+      });
       toast({
         title: "Validation Failed",
-        description: "Please check the highlighted fields and try again.",
-        variant: "destructive",
+        description: "Please check the highlighted fields.",
+        variant: "destructive"
       });
       return;
     }
@@ -547,33 +552,51 @@ const Recommendation = () => {
     }
 
     // --- Start Submission Process ---
-    // Create a process toast that we'll update
-    const toastObj = toast({
+    // Show "Submitting..." loading state
+    Swal.fire({
       title: "Processing Your Request",
-      description: "Step 1: Saving farm details...",
-      variant: "loading",
-      duration: 60000, // Long duration as we'll manually dismiss it
+      html: `
+        <div style="text-align: left; padding: 10px;">
+          <p id="swal-step1">1. Saving farm details...</p>
+          <p id="swal-step2" style="color: grey;">2. Fetching soil data...</p>
+          <p id="swal-step3" style="color: grey;">3. Fetching weather data...</p>
+          <p id="swal-step4" style="color: grey;">4. Fetching elevation data...</p>
+          <p id="swal-step5" style="color: grey;">5. Generating recommendations...</p>
+        </div>
+      `,
+      icon: "info",
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading(); // Show spinner
+      },
+      showConfirmButton: false, // Hide the default OK button
     });
-    
-    // Utility function to update toast
-    const updateProcessToast = (step: number, status: string, message: string) => {
-      const stepInfo = `Step ${step}: ${message}`;
-      const variant = status === 'error' ? 'destructive' : 
-                     status === 'warning' ? 'warning' : 
-                     status === 'done' ? 'success' : 'loading';
-      
-      toast({
-        id: toastObj.id,
-        title: "Processing Your Request",
-        description: stepInfo,
-        variant: variant as "default" | "destructive" | "success" | "warning" | "info" | "loading" | undefined,
-        duration: variant === 'loading' ? 60000 : 5000, // Keep loading toasts longer
-      });
+
+     // Helper to update Swal step - Fixed TypeScript errors by properly casting elements
+     const updateSwalStep = (stepNumber: number, status: 'processing' | 'done' | 'warning' | 'error', text?: string) => {
+        const stepElement = Swal.getHtmlContainer()?.querySelector(`#swal-step${stepNumber}`);
+        if (stepElement) {
+          stepElement.textContent = `${stepNumber}. ${text || stepElement.textContent?.substring(3)}`; // Update text if provided
+          if (status === 'done') stepElement.innerHTML = `✅ ${stepElement.textContent}`;
+          else if (status === 'warning') stepElement.innerHTML = `⚠️ ${stepElement.textContent}`;
+          else if (status === 'error') stepElement.innerHTML = `❌ ${stepElement.textContent}`;
+          else {
+            // Use setAttribute instead of direct style assignment
+            stepElement.setAttribute('style', 'color: black');
+          }
+        }
+         // Make next step grey initially
+        const nextStepElement = Swal.getHtmlContainer()?.querySelector(`#swal-step${stepNumber + 1}`);
+         if (nextStepElement && status === 'done') {
+           // Use setAttribute instead of direct style assignment
+           nextStepElement.setAttribute('style', 'color: black');
+        }
     };
+
 
     try {
       // Step 1: Prepare and Send Farm Data
-      updateProcessToast(1, 'loading', 'Saving farm details...');
+      updateSwalStep(1, 'processing', 'Saving farm details...');
       const farmFormData = new FormData();
       farmFormData.append("username", formData.name);
       farmFormData.append("area", formData.farmArea);
@@ -585,6 +608,8 @@ const Recommendation = () => {
       farmFormData.append("contactNum", formData.contact);
       farmFormData.append("markerPosition", JSON.stringify(markerPosition));
 
+      // Omitted file upload logic
+
       console.log("Sending Farm Data:", { /* ... data ... */ });
 
       // Send farm data to your backend
@@ -593,18 +618,18 @@ const Recommendation = () => {
       });
 
       if (farmDataResponse.status !== 200 && farmDataResponse.status !== 201) {
-        updateProcessToast(1, 'error', 'Failed to save farm data');
+        updateSwalStep(1, 'error');
         throw new Error("Failed to save farm data to backend.");
       }
-      updateProcessToast(1, 'done', 'Farm details saved successfully');
+      updateSwalStep(1, 'done');
 
       // Step 2: Fetch Soil Data
-      updateProcessToast(2, 'loading', 'Fetching soil data...');
+      updateSwalStep(2, 'processing');
       let soilResponse = await fetchSoilData(markerPosition.lat, markerPosition.lng);
-      let soilFetchStatus = 'done';
+      let soilFetchStatus: 'done' | 'warning' | 'error' = 'done';
 
       // Process soil data
-      const soilDataForModel = {
+       const soilDataForModel = {
         soil_ph: 0, // Default values
         soil_nitrogen: 0,
         soil_phosphorus: 0,
@@ -631,11 +656,11 @@ const Recommendation = () => {
         soilDataForModel.soil_cec = (findMean("cec") ?? 200) / 10; // CEC (mmol(c)/kg -> cmol(+)/kg or meq/100g) needs division by 10 - Provide default
 
          console.log("Processed Soil Data:", soilDataForModel);
-         updateProcessToast(2, 'done', 'Soil data fetched successfully');
+         updateSwalStep(2, 'done');
       } else {
            console.warn("Soil data processing failed or data is incomplete.");
-           soilFetchStatus = 'warning';
-           updateProcessToast(2, 'warning', 'Using default soil data (incomplete/failed fetch)');
+           soilFetchStatus = 'warning'; // Mark as warning if fetch failed
+           updateSwalStep(2, 'warning', 'Soil data fetch incomplete/failed. Using defaults.');
            // Assign defaults explicitly again just in case
             soilDataForModel.soil_ph = 7.0;
             soilDataForModel.soil_nitrogen = 100;
@@ -645,20 +670,23 @@ const Recommendation = () => {
             soilDataForModel.soil_cec = 20;
       }
 
+
       // Step 3: Fetch Weather Data
-      updateProcessToast(3, 'loading', 'Fetching weather data...');
+      updateSwalStep(3, 'processing');
       const weatherApi = `https://api.open-meteo.com/v1/forecast?latitude=${markerPosition.lat}&longitude=${markerPosition.lng}&hourly=relative_humidity_2m&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max&forecast_days=16`;
       const weatherResponse = await axios.get(weatherApi);
       const weatherDataDaily = weatherResponse.data.daily;
       const weatherDataHourly = weatherResponse.data.hourly;
-      updateProcessToast(3, 'done', 'Weather data fetched successfully');
+      updateSwalStep(3, 'done');
+
 
       // Step 4: Fetch Elevation Data
-      updateProcessToast(4, 'loading', 'Fetching elevation data...');
+      updateSwalStep(4, 'processing');
       const elevationApi = `https://api.open-meteo.com/v1/elevation?latitude=${markerPosition.lat}&longitude=${markerPosition.lng}`;
       const elevationRes = await axios.get(elevationApi);
       const elevation = elevationRes.data.elevation?.[0] ?? 500; // Default elevation if API fails
-      updateProcessToast(4, 'done', 'Elevation data fetched successfully');
+      updateSwalStep(4, 'done');
+
 
       // Process Weather Data for Model (Using defaults if API failed or data missing)
       const safeReduce = (arr: number[] | undefined, initial: number = 0) => arr?.reduce((sum, val) => sum + (val ?? 0), initial) ?? initial;
@@ -679,8 +707,9 @@ const Recommendation = () => {
       const avgWindSpeed = safeAvg(weatherDataDaily?.wind_speed_10m_max, 10); // Default 10 km/h
       const totalRainfall = safeReduce(weatherDataDaily?.precipitation_sum); // Default 0
 
+
       // Step 5: Merge Data for Recommendation API
-      updateProcessToast(5, 'loading', 'Generating recommendations...');
+       updateSwalStep(5, 'processing'); // Indicate this step starts
       const mergedData = {
         latitude: markerPosition.lat,
         longitude: markerPosition.lng,
@@ -704,8 +733,8 @@ const Recommendation = () => {
 
       // Step 6: Send Merged Data to Recommendation API
       // WARNING: ngrok URLs are temporary. Replace with a stable backend URL.
-      const backendUrl = "https://crop-recommendation-fastapi.onrender.com/recommend"; // Store in variable
       // const backendUrl = "https://squid-intense-nearly.ngrok-free.app/recommend"; // Store in variable
+      const backendUrl = "https://crop-recommendation-fastapi.onrender.com/recommend"; // Store in variable
       console.log(`Sending data to backend: ${backendUrl}`);
 
       const recommendationResponse = await axios.post(backendUrl, mergedData, { timeout: 30000 }); // Increased timeout
