@@ -34,7 +34,7 @@ const toastVariants = cva(
         success: "border-green-100 bg-white dark:border-green-900 dark:bg-gray-900 text-green-600 dark:text-green-400",
         warning: "border-amber-100 bg-white dark:border-amber-900 dark:bg-gray-900 text-amber-600 dark:text-amber-400",
         info: "border-blue-100 bg-white dark:border-blue-900 dark:bg-gray-900 text-blue-600 dark:text-blue-400",
-        loading: "border-gray-100 bg-white dark:border-gray-800 dark:bg-gray-900 text-gray-700 dark:text-gray-300",
+        loading: "border-farm-light bg-white/95 dark:border-farm-dark/30 dark:bg-gray-900/95 text-farm-dark dark:text-gray-300 border-2 backdrop-blur-sm",
       },
     },
     defaultVariants: {
