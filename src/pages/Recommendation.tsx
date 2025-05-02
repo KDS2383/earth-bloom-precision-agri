@@ -733,7 +733,8 @@ const Recommendation = () => {
 
       // Step 6: Send Merged Data to Recommendation API
       // WARNING: ngrok URLs are temporary. Replace with a stable backend URL.
-      const backendUrl = "https://squid-intense-nearly.ngrok-free.app/recommend"; // Store in variable
+      // const backendUrl = "https://squid-intense-nearly.ngrok-free.app/recommend"; // Store in variable
+      const backendUrl = "https://crop-recommendation-fastapi.onrender.com/recommend"; // Store in variable
       console.log(`Sending data to backend: ${backendUrl}`);
 
       const recommendationResponse = await axios.post(backendUrl, mergedData, { timeout: 30000 }); // Increased timeout
