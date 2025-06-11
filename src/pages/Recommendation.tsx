@@ -1,23 +1,23 @@
 // src/pages/Recommendation.tsx
 
-// ... (imports and other code remain the same) ...
-import { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
-// Leaflet's default icon paths can be tricky with bundlers.
-// This hack helps, but ensure your build process copies Leaflet images
-// or consider using a different icon method (e.g., L.divIcon).
-import iconRetinaUrl from 'leaflet/dist/images/marker-icon-2x.png';
-import iconUrl from 'leaflet/dist/images/marker-icon.png';
-import shadowUrl from 'leaflet/dist/images/marker-shadow.png';
-import { BiCurrentLocation } from "react-icons/bi"; // Assuming you have react-icons installed
-import Swal from 'sweetalert2'; // Assuming sweetalert2 is installed
-import axios from 'axios'; // Assuming axios is installed
+// --- Remove Leaflet Imports ---
+// import L from 'leaflet';
+// import 'leaflet/dist/leaflet.css';
+// import iconRetinaUrl from 'leaflet/dist/images/marker-icon-2x.png';
+// import iconUrl from 'leaflet/dist/images/marker-icon.png';
+// import shadowUrl from 'leaflet/dist/images/marker-shadow.png';
+import { BiCurrentLocation } from "react-icons/bi";
+import Swal from 'sweetalert2';
+import axios from 'axios';
+
+// --- Import Google Maps Components ---
+import { GoogleMap, useJsApiLoader, MarkerF } from '@react-google-maps/api';
 
 import {
   Select,
@@ -29,19 +29,19 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
+// Import the service and type for your custom user profile
+import { getUserProfile, saveUserProfile, UserProfile } from '@/services/firebase/userService';
+import { useAuth } from "@/context/AuthContext";
 
-// Fix Leaflet default icon issue
-// @ts-ignore - Ignore TypeScript error for _getIconUrl
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: iconRetinaUrl,
-  iconUrl: iconUrl,
-  shadowUrl: shadowUrl,
-});
+// Import Checkbox component
+import { Checkbox } from "@/components/ui/checkbox"; 
 
+// --- Remove Leaflet Icon Fix ---
+// delete L.Icon.Default.prototype._getIconUrl;
+// L.Icon.Default.mergeOptions({ ... });
 
-// Mock data to simulate crop options (Using the larger list from Recommendation.tsx)
-const CROP_OPTIONS = [
+// Mock data (remains the same)
+const CROP_OPTIONS = [ /* ... crop list ... */
   "Acai Berry", "Adzuki Bean", "Almond", "Amaranth", "Anise",
   "Apple", "Apricot", "Areca Nut", "Artichoke", "Arugula",
   "Ash Gourd", "Asparagus", "Avocado", "Bael", "Bambara Groundnut",
@@ -84,139 +84,220 @@ const CROP_OPTIONS = [
   "Yam", "Yam Bean", "Zucchini"
 ];
 
-// Define types for better type safety
+// LatLng type remains useful
 type LatLng = {
   lat: number;
   lng: number;
 };
 
-// Using the AREA_UNITS from Recommendation.tsx structure
+// Area units remain the same
 const AREA_UNITS = [
-  { value: "sqm", label: "Square meters" }, // Corresponds to "Square meters" in InputForm
-  { value: "hectares", label: "Hectare" },    // Corresponds to "Hectare" in InputForm
-  { value: "acres", label: "Acre" },       // Corresponds to "Acre" in InputForm
-  // Add "Bigha" if needed, or remove if not supported by backend
-  { value: "bigha", label: "Bigha" }       // Corresponds to "Bigha" in InputForm
+  { value: "sqm", label: "Square meters" },
+  { value: "hectares", label: "Hectare" },
+  { value: "acres", label: "Acre" },
+  { value: "bigha", label: "Bigha" }
 ];
 
+// --- Google Maps Configuration ---
+const mapContainerStyle = {
+  width: '100%',
+  height: '400px',
+  borderRadius: '0.375rem', // Corresponds to rounded-md
+  border: '1px solid #d1d5db', // Corresponds to border-gray-300
+};
+
+// Libraries needed for Google Maps API (geocoding for address lookup)
+const libraries: ("places" | "geocoding" | "drawing" | "geometry" | "visualization")[] = ['geocoding', 'places'];
 
 const Recommendation = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Default position (Can use the one from InputForm.js if it's more relevant)
-  // const DEFAULT_POSITION: LatLng = { lat: 51.505, lng: -0.09 }; // Rec.tsx default
-  const DEFAULT_POSITION: LatLng = { lat: 19.99675137006276, lng: 73.78974342339409 }; // InputForm.js default
+  const { user } = useAuth();
 
-  const mapRef = useRef<HTMLDivElement | null>(null);
-  const mapInstance = useRef<L.Map | null>(null);
-  const markerInstance = useRef<L.Marker | null>(null);
+  const DEFAULT_POSITION: LatLng = { lat: 19.99675137006276, lng: 73.78974342339409 };
 
-  // State for map location and address details (from both files, combined)
+  // --- Remove Leaflet Refs ---
+  // const mapRef = useRef<HTMLDivElement | null>(null); // No longer needed for div ref
+  // const mapInstance = useRef<L.Map | null>(null);
+  // const markerInstance = useRef<L.Marker | null>(null);
+
+  // --- Google Maps State ---
+  const mapRef = useRef<google.maps.Map | null>(null); // Ref to store map instance
+
+  // State for map location and address details
   const [markerPosition, setMarkerPosition] = useState<LatLng>(DEFAULT_POSITION);
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
   const [pincode, setPincode] = useState('');
   const [isLoadingAddress, setIsLoadingAddress] = useState(false);
-  const [searchAddress, setSearchAddress] = useState(''); // For address search input
+  const [searchAddress, setSearchAddress] = useState('');
+  
+  // state for the "Save Profile" checkbox
+  const [shouldUpdateProfile, setShouldUpdateProfile] = useState(false);
 
-  // Form state (combined from both files)
+  // Add state to hold the rich user profile data from your service
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+
+  // Form state (remains the same)
   const [formData, setFormData] = useState({
-    name: "",          // username from InputForm
-    contact: "",       // contactNum from InputForm
-    farmArea: "",      // area from InputForm
-    areaUnit: AREA_UNITS[0].value, // measureScale from InputForm, default to sqm
-    // soilType: "",   // Omitted as per Recommendation.tsx commented out code
-    // location will be taken from markerPosition state
+    name: "",
+    contact: "",
+    farmArea: "",
+    areaUnit: AREA_UNITS[0].value,
   });
 
-  // State for past crops (from Recommendation.tsx selection model)
+  // Add a new useEffect to fetch the full user profile from your service
+  useEffect(() => {
+    // We only fetch the profile if the user is authenticated
+    if (user) {
+      const fetchProfileData = async () => {
+        try {
+          const profile = await getUserProfile();
+          if (profile) {
+            setUserProfile(profile);
+          }
+        } catch (error) {
+          console.error("Failed to fetch user profile on recommendation page:", error);
+          // Optional: You could show a non-blocking toast here if needed
+        }
+      };
+      fetchProfileData();
+    }
+  }, [user]); // This effect runs when the auth state is confirmed
+
+  // Add a useEffect to pre-fill the form when the user data is available
+  useEffect(() => {
+    // This effect now depends on both the basic auth user and the fetched profile
+    if (user) {
+      // Prioritize the name from the editable profile, but fall back to the auth name
+      const nameToSet = userProfile?.displayName || user.displayName || '';
+      
+      // The contact number can now be correctly fetched from our custom profile data
+      const contactToSet = userProfile?.contactNumber || '';
+
+      // Update the form data state
+      setFormData(currentData => ({
+        ...currentData,
+        name: nameToSet,
+        contact: contactToSet,
+      }));
+    }
+  }, [user, userProfile]); // This effect runs when auth state is confirmed OR when the full profile is fetched
+
+
+  // Crop state (remains the same)
   const [selectedCrops, setSelectedCrops] = useState<string[]>([]);
   const [availableCrops, setAvailableCrops] = useState<string[]>(CROP_OPTIONS);
 
-  // State for form validation errors
+  // Error state (remains the same)
   const [errors, setErrors] = useState<{ [key: string]: string | undefined }>({});
 
+  // --- Load Google Maps Script ---
+  const { isLoaded, loadError } = useJsApiLoader({
+    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "", // Access env variable
+    libraries: libraries,
+  });
 
-  // --- Geolocation and Address Fetching ---
+  // --- Geocoding Functions (using Google Maps Geocoder) ---
 
-  // Function to fetch address from coordinates using Nominatim
-  const getAddressFromCoordinates = async (lat: number, lon: number) => {
-    setIsLoadingAddress(true);
-    try {
-      // Use the more complete Nominatim format from InputForm.js
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`
-      );
-      const data = await response.json();
+  // Helper to parse address components from Google Geocoder result
+  const parseGoogleAddress = (results: google.maps.GeocoderResult[] | null) => {
+    if (!results || results.length === 0) {
+      return { displayAddress: "Address not found", city: "Unknown", pincode: "" };
+    }
+    const result = results[0]; // Use the first result
+    const displayAddress = result.formatted_address || "Address details unavailable";
+    let foundCity = "Unknown";
+    let foundPincode = "";
 
-      if (data && data.display_name) {
-        const addressParts = data.address || {};
-        // Determine city more robustly as in InputForm.js
-        const determinedCity =
-          addressParts.city ||
-          addressParts.town ||
-          addressParts.village ||
-          addressParts.state_district ||
-          addressParts.county ||
-          addressParts.region ||
-          addressParts.state ||
-          "Unknown";
-
-        setAddress(data.display_name);
-        setCity(determinedCity);
-        setPincode(addressParts.postcode || "");
-        // Clear location error if address is found
-        if (errors.location) {
-             setErrors(currentErrors => ({...currentErrors, location: undefined}));
-        }
-      } else {
-        setAddress("Address not found"); // Or "" as in InputForm.js
-        setCity("Unknown");           // Or "" as in InputForm.js
-        setPincode("");
+    // Loop through address components to find city and postal code
+    result.address_components?.forEach(component => {
+      const types = component.types;
+      if (types.includes('locality') || types.includes('administrative_area_level_3')) {
+        foundCity = component.long_name;
+      } else if ((types.includes('administrative_area_level_2') || types.includes('administrative_area_level_1')) && foundCity === 'Unknown') {
+        // Fallback to broader administrative areas if specific locality isn't found
+        foundCity = component.long_name;
+      } else if (types.includes('postal_code')) {
+        foundPincode = component.long_name;
       }
-    } catch (error) {
-      console.error("Error fetching address:", error);
+    });
+
+    // Sometimes city isn't in 'locality', might be in sublocality or neighborhood for villages/towns
+    if (foundCity === "Unknown") {
+      const sublocality = result.address_components?.find(c => c.types.includes("sublocality"));
+      if (sublocality) foundCity = sublocality.long_name;
+      else {
+        const neighborhood = result.address_components?.find(c => c.types.includes("neighborhood"));
+        if (neighborhood) foundCity = neighborhood.long_name;
+      }
+    }
+
+    return { displayAddress, city: foundCity, pincode: foundPincode };
+  };
+
+
+  // Function to fetch address from coordinates using Google Geocoder
+  const getAddressFromCoordinates = useCallback(async (lat: number, lng: number) => {
+    if (!isLoaded || !window.google) return; // Ensure Maps API is loaded
+
+    setIsLoadingAddress(true);
+    const geocoder = new window.google.maps.Geocoder();
+    const latLng = new window.google.maps.LatLng(lat, lng);
+
+    try {
+      const response = await geocoder.geocode({ location: latLng });
+      const { displayAddress, city: determinedCity, pincode: determinedPincode } = parseGoogleAddress(response.results);
+
+      setAddress(displayAddress);
+      setCity(determinedCity);
+      setPincode(determinedPincode);
+
+      if (displayAddress !== "Address not found" && errors.location) {
+        setErrors(currentErrors => ({ ...currentErrors, location: undefined }));
+      }
+    } catch (error: any) {
+      console.error("Error fetching address via Google Geocoder:", error);
       setAddress("Error fetching address");
       setCity("");
       setPincode("");
+      toast({ title: "Geocoding Error", description: `Could not fetch address: ${error?.message || 'Unknown error'}`, variant: "destructive" });
     } finally {
       setIsLoadingAddress(false);
     }
-  };
+  }, [isLoaded, errors.location]); // Depend on isLoaded and error state
 
-  // Function to get current location using Geolocation API
+
+  // Function to get current location (remains mostly the same, but updates map differently)
   const useCurrentLocation = () => {
     if (navigator.geolocation) {
-      setIsLoadingAddress(true); // Show loading while getting location and address
+      setIsLoadingAddress(true);
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const { latitude, longitude } = position.coords;
           const newPosition = { lat: latitude, lng: longitude };
 
-          // Update map/marker if map is initialized
-          if (markerInstance.current && mapInstance.current) {
-            markerInstance.current.setLatLng([latitude, longitude]);
-            mapInstance.current.setView([latitude, longitude], 13); // Zoom level 13
-            setMarkerPosition(newPosition); // Update state
-            getAddressFromCoordinates(latitude, longitude); // Fetch address
-          } else {
-            // If map not yet initialized, update state; useEffect will handle map init
-            setMarkerPosition(newPosition);
-            // Fetch address immediately even if map isn't ready
-            getAddressFromCoordinates(latitude, longitude);
+          setMarkerPosition(newPosition); // Update state triggers re-render
+
+          // Pan the map to the new location if map is loaded
+          if (mapRef.current) {
+            mapRef.current.panTo(newPosition);
+            mapRef.current.setZoom(14); // Zoom in a bit more
           }
+          // Fetch address (will be called by useEffect watching markerPosition)
+          // getAddressFromCoordinates(latitude, longitude); // No need to call directly, useEffect handles it
         },
         (error) => {
           console.error("Error fetching current location:", error);
-          setIsLoadingAddress(false); // Stop loading on error
+          setIsLoadingAddress(false);
           toast({
             title: "Location Error",
             description: "Could not fetch current location. Please enable location services.",
             variant: "destructive"
           });
         },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 } // Options
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
     } else {
       toast({
@@ -227,119 +308,94 @@ const Recommendation = () => {
     }
   };
 
-  // Function to update marker position by searching an address (from InputForm.js)
+  // Function to update marker position by searching an address (using Google Geocoder)
   const updateMarkerFromAddress = async (addressQuery: string) => {
-    if (!addressQuery.trim()) return;
-    setIsLoadingAddress(true); // Indicate loading while searching/fetching
+    if (!addressQuery.trim() || !isLoaded || !window.google) return;
+
+    setIsLoadingAddress(true);
+    const geocoder = new window.google.maps.Geocoder();
 
     try {
-      const response = await fetch(
-        // Limit to 1 result and format as json
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addressQuery)}&limit=1`
-      );
-      const data = await response.json();
+      const response = await geocoder.geocode({ address: addressQuery });
 
-      if (data.length > 0) {
-        const { lat, lon } = data[0];
-        const newPosition = { lat: parseFloat(lat), lng: parseFloat(lon) };
+      if (response.results && response.results.length > 0) {
+        const location = response.results[0].geometry.location;
+        const newPosition = { lat: location.lat(), lng: location.lng() };
 
-        // Update map/marker if map is initialized
-        if (markerInstance.current && mapInstance.current) {
-          markerInstance.current.setLatLng([newPosition.lat, newPosition.lng]);
-          mapInstance.current.setView([newPosition.lat, newPosition.lng], 13); // Zoom level 13
-          setMarkerPosition(newPosition); // Update state
-          getAddressFromCoordinates(newPosition.lat, newPosition.lng); // Get address for new position
-        } else {
-          // If map not yet initialized, update state; useEffect will handle map init
-          setMarkerPosition(newPosition);
-          // Fetch address immediately even if map isn't ready
-          getAddressFromCoordinates(newPosition.lat, newPosition.lng);
+        setMarkerPosition(newPosition); // Update state triggers re-render
+
+        // Pan the map to the new location
+        if (mapRef.current) {
+          mapRef.current.panTo(newPosition);
+          mapRef.current.setZoom(14);
         }
-         // Clear search input after successful search
-         setSearchAddress('');
+        // Fetch address for the found coordinates (will be called by useEffect)
+        // getAddressFromCoordinates(newPosition.lat, newPosition.lng); // No need to call directly
+
+        setSearchAddress(''); // Clear search input
       } else {
         toast({
           title: "Address Not Found",
           description: `No location found for "${addressQuery}"`,
           variant: "destructive"
         });
-        setIsLoadingAddress(false); // Stop loading
+        setIsLoadingAddress(false);
       }
-    } catch (error) {
-      console.error("Error fetching location:", error);
+    } catch (error: any) {
+      console.error("Error fetching location via Google Geocoder:", error);
       toast({
         title: "Search Error",
-        description: "Error searching for address.",
+        description: `Error searching for address: ${error?.message || 'Unknown error'}`,
         variant: "destructive"
       });
-      setIsLoadingAddress(false); // Stop loading
+      setIsLoadingAddress(false);
     }
+    // setIsLoadingAddress(false); // Moved inside try/catch/finally
   };
 
 
-  // --- useEffect for Map Initialization and Cleanup ---
+  // --- useEffect for Initial Address Fetch & when MarkerPosition changes ---
   useEffect(() => {
-    // Prevent initialization if map already exists
-    if (!mapRef.current || mapInstance.current) return;
-
-    // Initialize map
-    mapInstance.current = L.map(mapRef.current).setView(
-      [markerPosition.lat, markerPosition.lng],
-      13 // Initial zoom level
-    );
-
-    // Add OpenStreetMap tile layer
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-    }).addTo(mapInstance.current);
-
-    // Add draggable marker (using default icon after the fix above)
-    markerInstance.current = L.marker(
-      [markerPosition.lat, markerPosition.lng],
-      { draggable: true }
-    ).addTo(mapInstance.current);
-
-    // --- Event Listeners ---
-    markerInstance.current.on("dragend", () => {
-      if (!markerInstance.current) return;
-      const { lat, lng } = markerInstance.current.getLatLng();
-      setMarkerPosition({ lat, lng }); // Update state triggers address fetch via separate useEffect
-    });
-
-    mapInstance.current.on("click", (event: L.LeafletMouseEvent) => {
-      if (!markerInstance.current) return;
-      const { lat, lng } = event.latlng;
-      markerInstance.current.setLatLng([lat, lng]);
-      setMarkerPosition({ lat, lng }); // Update state triggers address fetch via separate useEffect
-    });
-
-    // Initial address fetch for the starting position if address is not already set
-    if (!address) {
-       getAddressFromCoordinates(markerPosition.lat, markerPosition.lng);
+    // Fetch address whenever markerPosition changes, but only if the API is loaded
+    if (isLoaded) {
+      getAddressFromCoordinates(markerPosition.lat, markerPosition.lng);
     }
-
-    // --- Cleanup function ---
-    return () => {
-      if (mapInstance.current) {
-        mapInstance.current.remove();
-        mapInstance.current = null;
-      }
-      markerInstance.current = null; // Explicitly nullify marker ref on cleanup
-    };
-
-  }, []); // Empty dependency array ensures this runs only once on mount for initialization
-
-   // Effect to fetch address ONLY when markerPosition changes
-    useEffect(() => {
-        // Don't run on initial mount if coordinates are default, wait for interaction or useCurrentLocation
-        if (markerPosition.lat !== DEFAULT_POSITION.lat || markerPosition.lng !== DEFAULT_POSITION.lng || address === '') {
-            getAddressFromCoordinates(markerPosition.lat, markerPosition.lng);
-        }
-    }, [markerPosition]); // Depend only on markerPosition
+    // No cleanup needed here for Google Maps components themselves
+  }, [markerPosition, isLoaded, getAddressFromCoordinates]); // Add getAddressFromCoordinates dependency
 
 
-  // --- Form Handling ---
+  // --- Map Event Handlers ---
+  const onMapLoad = useCallback((map: google.maps.Map) => {
+    mapRef.current = map; // Store map instance
+    // Optionally set initial bounds or other map options here
+  }, []);
 
+  const onMapClick = useCallback((e: google.maps.MapMouseEvent) => {
+    if (e.latLng) {
+      setMarkerPosition({
+        lat: e.latLng.lat(),
+        lng: e.latLng.lng(),
+      });
+    }
+  }, []);
+
+  const onMarkerDragEnd = useCallback((e: google.maps.MapMouseEvent) => {
+    if (e.latLng) {
+      setMarkerPosition({
+        lat: e.latLng.lat(),
+        lng: e.latLng.lng(),
+      });
+    }
+  }, []);
+
+  const onMapUnmount = useCallback(() => {
+    mapRef.current = null; // Clean up map instance ref
+  }, []);
+
+
+  // --- Form Handling (handleCropSelection, handleRemoveCrop, handleInputChange, handleSelectChange) ---
+  // These remain exactly the same as before.
+  // ... (copy the existing functions here) ...
   const handleCropSelection = (crop: string) => {
     if (selectedCrops.length >= 3) {
       toast({
@@ -357,11 +413,11 @@ const Recommendation = () => {
 
     // Clear validation error for pastCrops if present
     if (errors.pastCrops) {
-        setErrors(currentErrors => {
-            const newErrors = { ...currentErrors };
-            delete newErrors.pastCrops;
-            return newErrors;
-        });
+      setErrors(currentErrors => {
+        const newErrors = { ...currentErrors };
+        delete newErrors.pastCrops;
+        return newErrors;
+      });
     }
   };
 
@@ -377,11 +433,11 @@ const Recommendation = () => {
 
     // Clear error for this field
     if (errors[name]) {
-        setErrors(currentErrors => {
-            const newErrors = { ...currentErrors };
-            delete newErrors[name];
-            return newErrors;
-        });
+      setErrors(currentErrors => {
+        const newErrors = { ...currentErrors };
+        delete newErrors[name];
+        return newErrors;
+      });
     }
   };
 
@@ -391,134 +447,129 @@ const Recommendation = () => {
 
     // Clear error for this field if applicable (e.g., areaUnit)
     if (errors[name]) {
-         setErrors(currentErrors => {
-            const newErrors = { ...currentErrors };
-            delete newErrors[name];
-            return newErrors;
-        });
+      setErrors(currentErrors => {
+        const newErrors = { ...currentErrors };
+        delete newErrors[name];
+        return newErrors;
+      });
     }
   };
 
 
-   // --- Validation ---
-    const validateForm = () => {
-        let currentErrors: { [key: string]: string | undefined } = {};
-        let isValid = true;
+  // --- Validation (validateForm) ---
+  // Remains the same.
+  // ... (copy the existing function here) ...
+  const validateForm = () => {
+    let currentErrors: { [key: string]: string | undefined } = {};
+    let isValid = true;
 
-        if (!formData.name.trim()) {
-            currentErrors.name = "Name is required.";
-            isValid = false;
-        }
+    if (!formData.name.trim()) {
+      currentErrors.name = "Name is required.";
+      isValid = false;
+    }
 
-        if (!formData.farmArea.trim() || isNaN(parseFloat(formData.farmArea)) || parseFloat(formData.farmArea) <= 0) {
-            currentErrors.farmArea = "Enter a valid area size.";
-            isValid = false;
-        }
+    if (!formData.farmArea.trim() || isNaN(parseFloat(formData.farmArea)) || parseFloat(formData.farmArea) <= 0) {
+      currentErrors.farmArea = "Enter a valid area size.";
+      isValid = false;
+    }
 
-         const phonePattern = /^[1-9]\d{9}$/; // Simple 10-digit number starting 1-9
-         if (!formData.contact.trim() || !phonePattern.test(formData.contact)) {
-             currentErrors.contact = "Enter a valid 10-digit contact number.";
-             isValid = false;
-         }
+    const phonePattern = /^[1-9]\d{9}$/; // Simple 10-digit number starting 1-9
+    if (!formData.contact.trim() || !phonePattern.test(formData.contact)) {
+      currentErrors.contact = "Enter a valid 10-digit contact number.";
+      isValid = false;
+    }
 
-        // Check if address was successfully determined (user selected on map or searched)
-        // Allow submission even if address isn't fully resolved, but have validation error
-        if (!address.trim() || !city.trim() || !pincode.trim() || address === 'Address not found' || address === 'Error fetching address' ) {
-             currentErrors.location = "Valid location with address, city, and pincode required. Please select on map or search.";
-             isValid = false;
-        }
-
-
-        // Must select exactly 3 past crops
-        if (selectedCrops.length !== 3) {
-             currentErrors.pastCrops = "Please select exactly 3 past crops.";
-             isValid = false;
-        }
+    // Check if address was successfully determined
+    if (!address.trim() || !city.trim() || city === 'Unknown' || !pincode.trim() || address === 'Address not found' || address === 'Error fetching address') {
+      currentErrors.location = "Valid location with address, city, and pincode required. Please select on map or search.";
+      // isValid = false; // Keep validation, but maybe allow submission if only pincode is missing sometimes? Decide on strictness. For now, require all.
+      isValid = false;
+    }
 
 
-        setErrors(currentErrors);
-        return isValid;
-    };
+    // Must select exactly 3 past crops
+    if (selectedCrops.length !== 3) {
+      currentErrors.pastCrops = "Please select exactly 3 past crops.";
+      isValid = false;
+    }
 
 
-  // --- Data Fetching Helper (from InputForm.js) ---
+    setErrors(currentErrors);
+    return isValid;
+  };
+
+
+  // --- Data Fetching Helper (fetchSoilData) ---
+  // Remains the same.
+  // ... (copy the existing function here) ...
   const fetchSoilData = async (lat: number, lng: number) => {
-            let maxAttempts = 5;
-            let offset = 0.005; // Start with a small offset
+    let maxAttempts = 5;
+    let offset = 0.005; // Start with a small offset
 
-            for (let i = 0; i < maxAttempts; i++) {
-                // Vary coordinates slightly to find a covered tile
-                let currentLat = lat + (i % 2 === 0 ? offset : -offset);
-                let currentLng = lng + (i % 2 === 0 ? (i < 2 ? 0 : offset) : (i < 2 ? 0 : -offset)); // Alternate lat/lng adjustments
+    for (let i = 0; i < maxAttempts; i++) {
+      // Vary coordinates slightly to find a covered tile
+      let currentLat = lat + (i % 2 === 0 ? offset : -offset);
+      let currentLng = lng + (i % 2 === 0 ? (i < 2 ? 0 : offset) : (i < 2 ? 0 : -offset)); // Alternate lat/lng adjustments
 
-                if (i > 1) offset += 0.005; // Increase offset after first couple attempts
+      if (i > 1) offset += 0.005; // Increase offset after first couple attempts
 
-                try {
-                    console.log(`Attempt ${i + 1}: Fetching soil data at lat=${currentLat.toFixed(6)}, lng=${currentLng.toFixed(6)}`);
-                    // Use the SoilGrids API and properties from InputForm.js
-                    const soilApi = `https://rest.isric.org/soilgrids/v2.0/properties/query?lon=${currentLng}&lat=${currentLat}&properties=phh2o,nitrogen,soc,cec,wv0010,potassium_extractable&depth=0-5cm`;
-                    const soilResponse = await axios.get(soilApi, { timeout: 15000 }); // Increased timeout
+      try {
+        console.log(`Attempt ${i + 1}: Fetching soil data at lat=${currentLat.toFixed(6)}, lng=${currentLng.toFixed(6)}`);
+        const soilApi = `https://rest.isric.org/soilgrids/v2.0/properties/query?lon=${currentLng}&lat=${currentLat}&properties=phh2o,nitrogen,soc,cec,wv0010,potassium_extractable&depth=0-5cm`;
+        const soilResponse = await axios.get(soilApi, { timeout: 15000 }); // Increased timeout
 
-                    console.log("Soil API Response Status:", soilResponse.status);
-                    // console.log("Soil API Response Data:", soilResponse.data); // Log full response - can be verbose
+        console.log("Soil API Response Status:", soilResponse.status);
 
-                    // Check for valid data within the expected structure
-                    const layers = soilResponse.data?.properties?.layers;
-                    if (soilResponse.status === 200 && layers && layers.length > 0) {
-                         let hasValidData = false;
-                         // Check if *any* layer for the specified depth has a non-null mean value
-                         for (const layer of layers) {
-                             if (layer.depths?.length > 0 && layer.depths[0].values.mean !== null) {
-                                 hasValidData = true;
-                                 break;
-                             }
-                         }
-
-                        if (hasValidData) {
-                             console.log("✅ Soil Data Found:", soilResponse.data.properties);
-                             return soilResponse;
-                        } else {
-                            console.warn(`⚠️ Attempt ${i + 1}: Soil data available but mean values are null for depth 0-5cm. Trying nearby...`);
-                            // Continue trying nearby locations if data is all null for the target depth
-                        }
-                    } else {
-                        console.warn(`⚠️ Attempt ${i + 1}: Soil API returned success but data structure is unexpected or empty.`);
-                         // Continue trying nearby locations if structure is bad
-                    }
-
-                } catch (error: any) { // Use 'any' or a more specific type if you handle axios errors typed
-                    console.error(`❌ Error Fetching Soil Data (Attempt ${i + 1}):`, error.message);
-
-                    if (axios.isAxiosError(error) && error.response) {
-                         console.error("Error Response Data:", error.response.data);
-                         console.error("Error Response Status:", error.response.status);
-                         if (error.response.status === 400 || error.response.status === 404) {
-                              console.warn(`⚠️ Coordinates out of bounds or not covered by SoilGrids. Trying nearby...`);
-                         } else if (error.response.status >= 500) {
-                              console.warn(`⚠️ Soil API server error. Trying nearby...`);
-                         } else {
-                              console.error("Non-recoverable API error.");
-                              // Still continue trying nearby points in this case too
-                         }
-                    } else if (axios.isAxiosError(error) && error.request) {
-                         console.error("No response received from Soil API. Request details:", error.request);
-                         console.warn(`⚠️ Soil API request failed (network or timeout). Trying nearby...`);
-                         // Continue trying nearby locations on network/timeout errors
-                    } else {
-                         console.error("Error setting up Soil API request:", error.message);
-                         // Don't necessarily stop retrying for setup errors, maybe temporary issue
-                    }
-                }
-                // Add a small delay before retrying
-                await new Promise(resolve => setTimeout(resolve, 700)); // Increased delay slightly
+        const layers = soilResponse.data?.properties?.layers;
+        if (soilResponse.status === 200 && layers && layers.length > 0) {
+          let hasValidData = false;
+          for (const layer of layers) {
+            if (layer.depths?.length > 0 && layer.depths[0].values.mean !== null) {
+              hasValidData = true;
+              break;
             }
+          }
 
-            console.error("❌ Soil data could not be fetched after multiple attempts.");
-            return null; // Return null if all attempts fail
-        };
+          if (hasValidData) {
+            console.log("✅ Soil Data Found:", soilResponse.data.properties);
+            return soilResponse;
+          } else {
+            console.warn(`⚠️ Attempt ${i + 1}: Soil data available but mean values are null for depth 0-5cm. Trying nearby...`);
+          }
+        } else {
+          console.warn(`⚠️ Attempt ${i + 1}: Soil API returned success but data structure is unexpected or empty.`);
+        }
+
+      } catch (error: any) {
+        console.error(`❌ Error Fetching Soil Data (Attempt ${i + 1}):`, error.message);
+        if (axios.isAxiosError(error) && error.response) {
+          console.error("Error Response Data:", error.response.data);
+          console.error("Error Response Status:", error.response.status);
+          if (error.response.status === 400 || error.response.status === 404) {
+            console.warn(`⚠️ Coordinates out of bounds or not covered by SoilGrids. Trying nearby...`);
+          } else if (error.response.status >= 500) {
+            console.warn(`⚠️ Soil API server error. Trying nearby...`);
+          } else {
+            console.error("Non-recoverable API error.");
+          }
+        } else if (axios.isAxiosError(error) && error.request) {
+          console.error("No response received from Soil API. Request details:", error.request);
+          console.warn(`⚠️ Soil API request failed (network or timeout). Trying nearby...`);
+        } else {
+          console.error("Error setting up Soil API request:", error.message);
+        }
+      }
+      await new Promise(resolve => setTimeout(resolve, 700));
+    }
+
+    console.error("❌ Soil data could not be fetched after multiple attempts.");
+    return null;
+  };
 
 
-  // --- Submission Handling (Combined logic from InputForm.js submitPopUp and handleSubmit) ---
+  // --- Submission Handling (handleSubmit) ---
+  // Remains mostly the same, just ensure it uses the correct state variables (address, city, pincode, markerPosition)
+  // ... (copy the existing function here, double-check variable names match state) ...
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); // Prevent default form submission
 
@@ -552,7 +603,6 @@ const Recommendation = () => {
     }
 
     // --- Start Submission Process ---
-    // Show "Submitting..." loading state
     Swal.fire({
       title: "Processing Your Request",
       html: `
@@ -572,25 +622,22 @@ const Recommendation = () => {
       showConfirmButton: false, // Hide the default OK button
     });
 
-     // Helper to update Swal step - Fixed TypeScript errors by properly casting elements
-     const updateSwalStep = (stepNumber: number, status: 'processing' | 'done' | 'warning' | 'error', text?: string) => {
-        const stepElement = Swal.getHtmlContainer()?.querySelector(`#swal-step${stepNumber}`);
-        if (stepElement) {
-          stepElement.textContent = `${stepNumber}. ${text || stepElement.textContent?.substring(3)}`; // Update text if provided
-          if (status === 'done') stepElement.innerHTML = `✅ ${stepElement.textContent}`;
-          else if (status === 'warning') stepElement.innerHTML = `⚠️ ${stepElement.textContent}`;
-          else if (status === 'error') stepElement.innerHTML = `❌ ${stepElement.textContent}`;
-          else {
-            // Use setAttribute instead of direct style assignment
-            stepElement.setAttribute('style', 'color: black');
-          }
+    // Helper to update Swal step
+    const updateSwalStep = (stepNumber: number, status: 'processing' | 'done' | 'warning' | 'error', text?: string) => {
+      const stepElement = Swal.getHtmlContainer()?.querySelector(`#swal-step${stepNumber}`) as HTMLElement | null; // Cast needed
+      if (stepElement) {
+        stepElement.textContent = `${stepNumber}. ${text || stepElement.textContent?.substring(3)}`; // Update text if provided
+        if (status === 'done') stepElement.innerHTML = `✅ ${stepElement.textContent}`;
+        else if (status === 'warning') stepElement.innerHTML = `⚠️ ${stepElement.textContent}`;
+        else if (status === 'error') stepElement.innerHTML = `❌ ${stepElement.textContent}`;
+        else {
+          stepElement.style.color = 'black'; // Reset color for processing
         }
-         // Make next step grey initially
-        const nextStepElement = Swal.getHtmlContainer()?.querySelector(`#swal-step${stepNumber + 1}`);
-         if (nextStepElement && status === 'done') {
-           // Use setAttribute instead of direct style assignment
-           nextStepElement.setAttribute('style', 'color: black');
-        }
+      }
+      const nextStepElement = Swal.getHtmlContainer()?.querySelector(`#swal-step${stepNumber + 1}`) as HTMLElement | null; // Cast needed
+      if (nextStepElement && status === 'done') {
+        nextStepElement.style.color = 'black'; // Make next step active
+      }
     };
 
 
@@ -602,15 +649,16 @@ const Recommendation = () => {
       farmFormData.append("area", formData.farmArea);
       farmFormData.append("measureScale", formData.areaUnit);
       farmFormData.append("previousCrops", JSON.stringify(selectedCrops));
-      farmFormData.append("address", address);
-      farmFormData.append("city", city);
-      farmFormData.append("pincode", pincode);
+      farmFormData.append("address", address); // Use state variable
+      farmFormData.append("city", city);       // Use state variable
+      farmFormData.append("pincode", pincode); // Use state variable
       farmFormData.append("contactNum", formData.contact);
-      farmFormData.append("markerPosition", JSON.stringify(markerPosition));
+      farmFormData.append("markerPosition", JSON.stringify(markerPosition)); // Use state variable
 
-      // Omitted file upload logic
-
-      console.log("Sending Farm Data:", { /* ... data ... */ });
+      console.log("Sending Farm Data:", {
+        username: formData.name, area: formData.farmArea, measureScale: formData.areaUnit,
+        previousCrops: selectedCrops, address, city, pincode, contactNum: formData.contact, markerPosition
+      });
 
       // Send farm data to your backend
       const farmDataResponse = await axios.post("https://backend-dev-deployed.vercel.app/api/submit-farm-data", farmFormData, {
@@ -629,45 +677,38 @@ const Recommendation = () => {
       let soilFetchStatus: 'done' | 'warning' | 'error' = 'done';
 
       // Process soil data
-       const soilDataForModel = {
-        soil_ph: 0, // Default values
-        soil_nitrogen: 0,
-        soil_phosphorus: 0,
-        soil_potassium: 0,
-        soil_moisture: 0,
-        soil_cec: 0,
-        // Keep raw response for result page if needed
-        raw_soil_data: soilResponse?.data?.properties || null // Store only properties
+      const soilDataForModel = {
+        soil_ph: 7.0, // Defaults in case of failure
+        soil_nitrogen: 100,
+        soil_phosphorus: 100,
+        soil_potassium: 150,
+        soil_moisture: 20,
+        soil_cec: 20,
+        raw_soil_data: null as any // Keep raw response for result page if needed
       };
 
       if (soilResponse && soilResponse.data && soilResponse.data.properties && soilResponse.data.properties.layers) {
+        soilDataForModel.raw_soil_data = soilResponse.data.properties; // Store properties
         const layers = soilResponse.data.properties.layers;
         const findMean = (propName: string): number | null => {
-            const layer = layers.find((l: any) => l.name === propName);
-            return layer?.depths?.[0]?.values?.mean ?? null; // Return null if not found or mean is null
+          const layer = layers.find((l: any) => l.name === propName);
+          return layer?.depths?.[0]?.values?.mean ?? null;
         };
 
-        // Assign values, converting units if necessary and handling nulls
-        soilDataForModel.soil_ph = (findMean("phh2o") ?? 70) / 10; // pH needs division by 10
-        soilDataForModel.soil_nitrogen = findMean("nitrogen") ?? 100; // N (mg/kg) - Provide a reasonable default if null
-        soilDataForModel.soil_phosphorus = findMean("soc") ?? 100; // Using SOC (dg/kg) as P proxy - check units/conversion if needed, provide default
-        soilDataForModel.soil_potassium = findMean("potassium_extractable") ?? 150; // K (mg/kg) - Provide default
-        soilDataForModel.soil_moisture = (findMean("wv0010") ?? 200) / 10; // wv0010 (cm3/dm3 -> %) needs division by 10? Check SoilGrids docs - Provide default
-        soilDataForModel.soil_cec = (findMean("cec") ?? 200) / 10; // CEC (mmol(c)/kg -> cmol(+)/kg or meq/100g) needs division by 10 - Provide default
+        soilDataForModel.soil_ph = (findMean("phh2o") ?? 70) / 10;
+        soilDataForModel.soil_nitrogen = findMean("nitrogen") ?? 100;
+        soilDataForModel.soil_phosphorus = findMean("soc") ?? 100; // Using SOC as proxy
+        soilDataForModel.soil_potassium = findMean("potassium_extractable") ?? 150;
+        soilDataForModel.soil_moisture = (findMean("wv0010") ?? 200) / 10; // Check units
+        soilDataForModel.soil_cec = (findMean("cec") ?? 200) / 10; // Check units
 
-         console.log("Processed Soil Data:", soilDataForModel);
-         updateSwalStep(2, 'done');
+        console.log("Processed Soil Data:", soilDataForModel);
+        updateSwalStep(2, 'done');
       } else {
-           console.warn("Soil data processing failed or data is incomplete.");
-           soilFetchStatus = 'warning'; // Mark as warning if fetch failed
-           updateSwalStep(2, 'warning', 'Soil data fetch incomplete/failed. Using defaults.');
-           // Assign defaults explicitly again just in case
-            soilDataForModel.soil_ph = 7.0;
-            soilDataForModel.soil_nitrogen = 100;
-            soilDataForModel.soil_phosphorus = 100;
-            soilDataForModel.soil_potassium = 150;
-            soilDataForModel.soil_moisture = 20;
-            soilDataForModel.soil_cec = 20;
+        console.warn("Soil data processing failed or data is incomplete.");
+        soilFetchStatus = 'warning';
+        updateSwalStep(2, 'warning', 'Soil data fetch incomplete/failed. Using defaults.');
+        // Defaults are already set
       }
 
 
@@ -684,37 +725,33 @@ const Recommendation = () => {
       updateSwalStep(4, 'processing');
       const elevationApi = `https://api.open-meteo.com/v1/elevation?latitude=${markerPosition.lat}&longitude=${markerPosition.lng}`;
       const elevationRes = await axios.get(elevationApi);
-      const elevation = elevationRes.data.elevation?.[0] ?? 500; // Default elevation if API fails
+      const elevation = elevationRes.data.elevation?.[0] ?? 500; // Default elevation
       updateSwalStep(4, 'done');
 
 
-      // Process Weather Data for Model (Using defaults if API failed or data missing)
+      // Process Weather Data for Model
       const safeReduce = (arr: number[] | undefined, initial: number = 0) => arr?.reduce((sum, val) => sum + (val ?? 0), initial) ?? initial;
-      const safeLength = (arr: any[] | undefined) => arr?.length ?? 0;
       const safeMin = (arr: number[] | undefined, defaultVal: number) => arr && arr.length > 0 ? Math.min(...arr.filter(v => v !== null) as number[]) : defaultVal;
       const safeAvg = (arr: number[] | undefined, defaultVal: number) => {
-          const validItems = arr?.filter(v => v !== null) as number[] | undefined;
-          return validItems && validItems.length > 0 ? safeReduce(validItems) / validItems.length : defaultVal;
+        const validItems = arr?.filter(v => v !== null) as number[] | undefined;
+        return validItems && validItems.length > 0 ? safeReduce(validItems) / validItems.length : defaultVal;
       };
 
-
-      const avgHourlyHumidity = safeAvg(weatherDataHourly?.relative_humidity_2m, 60); // Default 60%
-      const minHourlyHumidity = safeMin(weatherDataHourly?.relative_humidity_2m, 40); // Default 40%
-
-      const avgDailyTemp = safeAvg(weatherDataDaily?.temperature_2m_max, 25); // Default 25 C
-      const minDailyTemp = safeMin(weatherDataDaily?.temperature_2m_min, 15); // Default 15 C
-
-      const avgWindSpeed = safeAvg(weatherDataDaily?.wind_speed_10m_max, 10); // Default 10 km/h
-      const totalRainfall = safeReduce(weatherDataDaily?.precipitation_sum); // Default 0
+      const avgHourlyHumidity = safeAvg(weatherDataHourly?.relative_humidity_2m, 60);
+      const minHourlyHumidity = safeMin(weatherDataHourly?.relative_humidity_2m, 40);
+      const avgDailyTemp = safeAvg(weatherDataDaily?.temperature_2m_max, 25);
+      const minDailyTemp = safeMin(weatherDataDaily?.temperature_2m_min, 15);
+      const avgWindSpeed = safeAvg(weatherDataDaily?.wind_speed_10m_max, 10);
+      const totalRainfall = safeReduce(weatherDataDaily?.precipitation_sum);
 
 
       // Step 5: Merge Data for Recommendation API
-       updateSwalStep(5, 'processing'); // Indicate this step starts
+      updateSwalStep(5, 'processing');
       const mergedData = {
         latitude: markerPosition.lat,
         longitude: markerPosition.lng,
-        elevation: Math.round(elevation), // Send rounded elevation
-        soil_ph: parseFloat(soilDataForModel.soil_ph.toFixed(1)), // Ensure correct format/precision
+        elevation: Math.round(elevation),
+        soil_ph: parseFloat(soilDataForModel.soil_ph.toFixed(1)),
         soil_nitrogen: Math.round(soilDataForModel.soil_nitrogen),
         soil_phosphorus: Math.round(soilDataForModel.soil_phosphorus),
         soil_potassium: Math.round(soilDataForModel.soil_potassium),
@@ -732,12 +769,10 @@ const Recommendation = () => {
       console.log("Merged Data for Recommendation:", mergedData);
 
       // Step 6: Send Merged Data to Recommendation API
-      // WARNING: ngrok URLs are temporary. Replace with a stable backend URL.
-      // const backendUrl = "https://squid-intense-nearly.ngrok-free.app/recommend"; // Store in variable
-      const backendUrl = "https://crop-recommendation-fastapi.onrender.com/recommend"; // Store in variable
+      const backendUrl = "https://crop-recommendation-fastapi.onrender.com/recommend";
       console.log(`Sending data to backend: ${backendUrl}`);
 
-      const recommendationResponse = await axios.post(backendUrl, mergedData, { timeout: 30000 }); // Increased timeout
+      const recommendationResponse = await axios.post(backendUrl, mergedData, { timeout: 30000 });
 
       if (recommendationResponse.status !== 200 && recommendationResponse.status !== 201) {
         updateSwalStep(5, 'error');
@@ -749,18 +784,34 @@ const Recommendation = () => {
 
       // Prepare data for Results page
       const soilDataForResultsPage = {
-          ph: mergedData.soil_ph, // Use the values sent to the model
-          nitrogen: mergedData.soil_nitrogen,
-          phosphorus: mergedData.soil_phosphorus,
-          potassium: mergedData.soil_potassium,
-          cec: mergedData.soil_cec,
-          moisture: mergedData.soil_moisture,
-          texture: "N/A", // Texture not available from this API
-          organic: null,  // Organic not directly available (SOC used as proxy for P)
-          soilRecommendations: ["Review nutrient levels based on recommended crops."], // Generic recommendation
-          // You could potentially pass the raw soil properties if needed for display
-          // raw_soil_properties: soilDataForModel.raw_soil_data
+        ph: mergedData.soil_ph,
+        nitrogen: mergedData.soil_nitrogen,
+        phosphorus: mergedData.soil_phosphorus,
+        potassium: mergedData.soil_potassium,
+        cec: mergedData.soil_cec,
+        moisture: mergedData.soil_moisture,
+        texture: "N/A",
+        organic: null,
+        soilRecommendations: ["Review nutrient levels based on recommended crops."],
+        // raw_soil_properties: soilDataForModel.raw_soil_data // Optionally pass raw data
       };
+
+      if (shouldUpdateProfile) {
+        // Prepare the data to be saved.
+        // We merge the existing profile with the new form data to avoid
+        // accidentally deleting fields that aren't on this form (like photoURL).
+        const profileDataToSave: UserProfile = {
+          ...userProfile, // Spread existing profile data first
+          displayName: formData.name,
+          contactNumber: formData.contact,
+        };
+        
+        console.log("Saving updated profile data:", profileDataToSave);
+        await saveUserProfile(profileDataToSave);
+        // Optional: show a small, non-blocking toast for this specific action
+        toast({ title: "Profile details saved." });
+      }
+
 
 
       // Final Success Message
@@ -768,61 +819,71 @@ const Recommendation = () => {
         title: "Success!",
         text: "Recommendations generated successfully.",
         icon: "success",
-        timer: 1500, // Automatically close after 1.5 seconds
+        timer: 1500,
         showConfirmButton: false,
       }).then(() => {
-          // Step 7: Navigate to result page, passing data in state
-          navigate("/results", {
-              state: {
-                  recommendations: recommendationResponse.data, // Object from backend { recommendations: [], processing_time_seconds: X }
-                  weather: weatherResponse.data,        // Raw weather data for charts on results page
-                  soil: soilDataForResultsPage,         // Pass the PROCESSED soil data object for display
-                  location: city || address.split(',')[0] || "Selected Location", // Best available location string
-              }
-          });
+        // Step 7: Navigate to result page
+        navigate("/results", {
+          state: {
+            recommendations: recommendationResponse.data,
+            weather: weatherResponse.data,
+            soil: soilDataForResultsPage,
+            location: city || address.split(',')[0] || "Selected Location",
+          }
+        });
       });
 
 
-    } catch (error: any) { // Use 'any' for error type or handle specific types
+    } catch (error: any) {
       console.error("Error during submission process:", error);
-      // Close any Swal loading messages first
-      Swal.close();
+      Swal.close(); // Close loading Swal
 
       let errorMessage = "An unexpected error occurred during submission.";
-      let errorDetails = ""; // To hold specific details for the toast
+      let errorDetails = "";
 
       if (axios.isAxiosError(error)) {
         errorDetails = error.message;
         if (error.response) {
-           // API returned an error status code (4xx or 5xx)
-           errorMessage = `API Error (${error.response.status})`;
-           errorDetails = error.response.data?.detail || JSON.stringify(error.response.data) || error.message;
-           errorMessage += `: ${errorDetails.substring(0, 100)}${errorDetails.length > 100 ? '...' : ''}`; // Truncate long details
+          errorMessage = `API Error (${error.response.status})`;
+          errorDetails = error.response.data?.detail || JSON.stringify(error.response.data) || error.message;
+          errorMessage += `: ${errorDetails.substring(0, 100)}${errorDetails.length > 100 ? '...' : ''}`;
         } else if (error.request) {
-           // Request was made but no response received (network error, timeout)
-           errorMessage = "Network Error";
-           errorDetails = "Could not reach one or more data services. Please check your connection and try again.";
+          errorMessage = "Network Error";
+          errorDetails = "Could not reach one or more data services. Please check your connection and try again.";
         } else {
-           // Error setting up the request
-           errorMessage = "Request Setup Error";
-           errorDetails = error.message;
+          errorMessage = "Request Setup Error";
+          errorDetails = error.message;
         }
       } else {
-          // General JavaScript error
-          errorMessage = "Processing Error";
-          errorDetails = error.message;
+        errorMessage = "Processing Error";
+        errorDetails = error.message;
       }
 
 
       Swal.fire("Submission Failed", `${errorMessage}. ${errorDetails}`, "error");
-       toast({
-            title: errorMessage,
-            description: errorDetails.substring(0, 150) + (errorDetails.length > 150 ? '...' : ''), // Show truncated details in toast
-            variant: "destructive",
-            duration: 7000 // Longer duration for errors
-        });
+      toast({
+        title: errorMessage,
+        description: errorDetails.substring(0, 150) + (errorDetails.length > 150 ? '...' : ''),
+        variant: "destructive",
+        duration: 7000
+      });
     }
   };
+
+
+  // --- Render Logic ---
+  if (loadError) {
+    return (
+      <Layout>
+        <section className="py-12 bg-farm-cream">
+          <div className="container text-center text-red-600">
+            Error loading Google Maps. Please check your API key setup and network connection. <br />
+            Error details: {loadError.message}
+          </div>
+        </section>
+      </Layout>
+    );
+  }
 
 
   return (
@@ -830,37 +891,24 @@ const Recommendation = () => {
       <section className="py-12 bg-farm-cream">
         <div className="container">
           <div className="text-center mb-12">
-            <h1 className="text-3xl md:text-4xl font-bold mb-4 text-farm-dark">
-              Get Crop Recommendations
-            </h1>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Enter your farm details below and our AI will analyze your specific conditions
-              to recommend the most suitable crops for optimal yield
-            </p>
+            {/* ... */}
           </div>
 
           <div className="max-w-4xl mx-auto">
             <Card>
               <CardHeader>
-                <CardTitle>Farm Information</CardTitle>
-                <CardDescription>
-                  Provide details about your farm to receive personalized recommendations
-                </CardDescription>
+                {/* ... */}
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-6">
-                  {/* --- Personal Details --- */}
                   <fieldset className="grid grid-cols-1 md:grid-cols-2 gap-6 border p-4 rounded-md">
                     <legend className="text-lg font-semibold px-2">Contact Details</legend>
                     <div className="space-y-2">
                       <Label htmlFor="name">Name<span className="text-red-500">*</span></Label>
                       <Input
-                        id="name"
-                        name="name"
-                        placeholder="Your full name"
-                        value={formData.name}
-                        onChange={handleInputChange}
-                        required
+                        id="name" name="name" placeholder="Your full name"
+                        value={formData.name} // This value is now controlled by the state
+                        onChange={handleInputChange} required
                         className={errors.name ? "border-red-500" : ""}
                       />
                       {errors.name && <p className="text-red-500 text-sm">{errors.name}</p>}
@@ -868,164 +916,159 @@ const Recommendation = () => {
                     <div className="space-y-2">
                       <Label htmlFor="contact">Contact Number<span className="text-red-500">*</span></Label>
                       <Input
-                        id="contact"
-                        name="contact"
-                        placeholder="10-digit mobile number"
+                        id="contact" name="contact" placeholder="10-digit mobile number"
                         value={formData.contact}
-                        onChange={handleInputChange}
-                        required
-                        type="tel"
-                        maxLength={10}
-                        pattern="[1-9]{1}[0-9]{9}" // HTML5 pattern validation
+                        onChange={handleInputChange} required
+                        type="tel" maxLength={10} pattern="[1-9]{1}[0-9]{9}"
                         className={errors.contact ? "border-red-500" : ""}
                       />
                       {errors.contact && <p className="text-red-500 text-sm">{errors.contact}</p>}
                     </div>
-                  </fieldset>
 
-                  {/* --- Location Details --- */}
-                   <fieldset className="space-y-4 border p-4 rounded-md">
-                      <legend className="text-lg font-semibold px-2">Farm Location<span className="text-red-500">*</span></legend>
-                       {/* Address Search */}
-                       <div className="flex flex-col sm:flex-row gap-2">
-                           <Input
-                               type="text"
-                               placeholder="Search address or place name..."
-                               value={searchAddress}
-                               onChange={(e) => setSearchAddress(e.target.value)}
-                               onKeyPress={(e) => { if (e.key === 'Enter') { e.preventDefault(); updateMarkerFromAddress(searchAddress); } }}
-                               disabled={isLoadingAddress}
-                               className="flex-grow"
-                           />
-                           <Button type="button" onClick={() => updateMarkerFromAddress(searchAddress)} disabled={isLoadingAddress || !searchAddress.trim()} className="w-full sm:w-auto">
-                               {isLoadingAddress && searchAddress ? 'Searching...' : 'Search'}
-                           </Button>
-                           <Button
-                               type="button"
-                               onClick={useCurrentLocation}
-                               variant="outline"
-                               disabled={isLoadingAddress}
-                               className="w-full sm:w-auto"
-                           >
-                               {isLoadingAddress && !searchAddress ? 'Fetching...' : <><BiCurrentLocation className="mr-1" /> Use Current</>}
-                           </Button>
-                       </div>
-                       {errors.location && <p className="text-red-500 text-sm -mt-2 mb-2">{errors.location}</p>}
-
-                       {/* Leaflet Map Container */}
-                      <div id="farm-location-map" ref={mapRef} className="w-full h-[400px] rounded-md border border-gray-300 bg-gray-100">
-                        {/* Map renders here */}
-                         {isLoadingAddress && (
-                            <div className="absolute inset-0 bg-white/50 flex items-center justify-center z-10">
-                                <p className="text-gray-700 font-semibold">Loading location data...</p>
-                             </div>
-                         )}
+                    {/* Add the Checkbox UI to the form --- */}
+                     <div className="flex items-center space-x-2 md:col-span-2 mt-2">
+                        <Checkbox
+                          id="update-profile"
+                          checked={shouldUpdateProfile}
+                          onCheckedChange={(checked) => setShouldUpdateProfile(Boolean(checked))}
+                        />
+                        <Label htmlFor="update-profile" className="text-sm font-normal cursor-pointer">
+                          Save these details to my profile for next time.
+                        </Label>
                       </div>
 
-                      {/* Displayed Location Info */}
-                      <div className="space-y-1 text-sm text-gray-700 bg-gray-50 p-3 rounded-md border">
-                        <p><strong>Selected Coordinates:</strong> {markerPosition.lat.toFixed(6)}, {markerPosition.lng.toFixed(6)}</p>
-                        <p><strong>Address:</strong> {isLoadingAddress ? <span className="italic">Fetching...</span> : (address || <span className="italic text-gray-500">Click on map or search</span>)}</p>
-                        <p><strong>City/Town:</strong> {city || '-'}</p>
-                        <p><strong>Pincode:</strong> {pincode || '-'}</p>
-                      </div>
+
                   </fieldset>
 
+                  {/* --- Location Details (uses Google Map) --- */}
+                  <fieldset className="space-y-4 border p-4 rounded-md">
+                    <legend className="text-lg font-semibold px-2">Farm Location<span className="text-red-500">*</span></legend>
+                    {/* Address Search (remains the same) */}
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <Input
+                        type="text" placeholder="Search address or place name..."
+                        value={searchAddress} onChange={(e) => setSearchAddress(e.target.value)}
+                        onKeyPress={(e) => { if (e.key === 'Enter') { e.preventDefault(); updateMarkerFromAddress(searchAddress); } }}
+                        disabled={isLoadingAddress || !isLoaded} // Disable if map not loaded
+                        className="flex-grow"
+                      />
+                      <Button type="button" onClick={() => updateMarkerFromAddress(searchAddress)} disabled={isLoadingAddress || !searchAddress.trim() || !isLoaded} className="w-full sm:w-auto">
+                        {isLoadingAddress && searchAddress ? 'Searching...' : 'Search'}
+                      </Button>
+                      <Button type="button" onClick={useCurrentLocation} variant="outline"
+                        disabled={isLoadingAddress || !isLoaded} // Disable if map not loaded
+                        className="w-full sm:w-auto"
+                      >
+                        {isLoadingAddress && !searchAddress ? 'Fetching...' : <><BiCurrentLocation className="mr-1" /> Use Current</>}
+                      </Button>
+                    </div>
+                    {errors.location && <p className="text-red-500 text-sm -mt-2 mb-2">{errors.location}</p>}
 
-                  {/* --- Farm & Crop Details --- */}
-                   <fieldset className="grid grid-cols-1 md:grid-cols-2 gap-6 border p-4 rounded-md">
-                       <legend className="text-lg font-semibold px-2">Farm & Crop History</legend>
+                    {/* Google Map Container */}
+                    <div className="relative"> {/* Added relative positioning for loading overlay */}
+                      {!isLoaded ? (
+                        <div style={mapContainerStyle} className="flex items-center justify-center bg-gray-200 text-gray-600">
+                          Loading Map...
+                        </div>
+                      ) : (
+                        <GoogleMap
+                          mapContainerStyle={mapContainerStyle}
+                          center={markerPosition} // Center map on marker position
+                          zoom={13}
+                          onLoad={onMapLoad}
+                          onUnmount={onMapUnmount}
+                          onClick={onMapClick}
+                          options={{ // Optional: Disable some controls if desired
+                            streetViewControl: false,
+                            mapTypeControl: false,
+                            fullscreenControl: false,
+                          }}
+                        >
+                          <MarkerF
+                            position={markerPosition}
+                            draggable={true}
+                            onDragEnd={onMarkerDragEnd}
+                          />
+                        </GoogleMap>
+                      )}
+                      {/* Loading Overlay for Address Fetch */}
+                      {isLoadingAddress && isLoaded && (
+                        <div className="absolute inset-0 bg-white/50 flex items-center justify-center z-10 pointer-events-none">
+                          <p className="text-gray-700 font-semibold bg-white/80 px-4 py-2 rounded shadow">Loading location data...</p>
+                        </div>
+                      )}
+                    </div>
 
-                       {/* Farm Area and Unit */}
-                       <div className="space-y-2">
-                         <Label htmlFor="farmArea">Farm Area<span className="text-red-500">*</span></Label>
-                         <div className="flex gap-2">
-                             <Input
-                                 id="farmArea"
-                                 name="farmArea"
-                                 type="number"
-                                 placeholder="Area size"
-                                 value={formData.farmArea}
-                                 onChange={handleInputChange}
-                                 required
-                                 min="0"
-                                 step="any" // Allow any decimal
-                                 className={`flex-grow ${errors.farmArea ? "border-red-500" : ""}`}
-                             />
-                             <Select
-                                 value={formData.areaUnit}
-                                 onValueChange={(value) => handleSelectChange("areaUnit", value)}
-                             >
-                                 <SelectTrigger id="areaUnit" className="w-[150px]"> {/* Fixed width for unit dropdown */}
-                                     <SelectValue placeholder="Unit" />
-                                 </SelectTrigger>
-                                 <SelectContent>
-                                     {AREA_UNITS.map((unit) => (
-                                         <SelectItem key={unit.value} value={unit.value}>
-                                             {unit.label}
-                                         </SelectItem>
-                                     ))}
-                                 </SelectContent>
-                             </Select>
-                         </div>
-                           {errors.farmArea && <p className="text-red-500 text-sm">{errors.farmArea}</p>}
-                       </div>
 
-                       {/* Past Crops Selection */}
-                       <div className="space-y-3 md:col-span-2"> {/* Span full width on medium screens */}
-                         <Label>3 Past Crops<span className="text-red-500">*</span></Label>
-                          <p className="text-xs text-gray-500 -mt-2">Select exactly 3 crops previously grown here.</p>
-                         <div className="flex flex-wrap gap-2 mb-3 min-h-[30px] p-2 border rounded-md bg-gray-50"> {/* Added background and min-height */}
-                           {selectedCrops.length === 0 && <span className="text-sm text-gray-400 italic">No crops selected</span>}
-                           {selectedCrops.map((crop) => (
-                             <div
-                               key={crop}
-                               className="flex items-center bg-farm-secondary/20 text-farm-primary px-3 py-1 rounded-full text-sm whitespace-nowrap"
-                             >
-                               {crop}
-                               <button
-                                 type="button"
-                                 className="ml-2 text-farm-primary/70 hover:text-red-600 focus:outline-none"
-                                 onClick={() => handleRemoveCrop(crop)}
-                                 aria-label={`Remove ${crop}`}
-                               >
-                                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-                               </button>
-                             </div>
-                           ))}
-                         </div>
+                    {/* Displayed Location Info (remains the same) */}
+                    <div className="space-y-1 text-sm text-gray-700 bg-gray-50 p-3 rounded-md border">
+                      <p><strong>Selected Coordinates:</strong> {markerPosition.lat.toFixed(6)}, {markerPosition.lng.toFixed(6)}</p>
+                      <p><strong>Address:</strong> {isLoadingAddress && !address ? <span className="italic">Fetching...</span> : (address || <span className="italic text-gray-500">Click on map or search</span>)}</p>
+                      <p><strong>City/Town:</strong> {city || '-'}</p>
+                      <p><strong>Pincode:</strong> {pincode || '-'}</p>
+                    </div>
+                  </fieldset>
 
-                         <Select
-                              disabled={selectedCrops.length >= 3}
-                              onValueChange={(value) => value && handleCropSelection(value)} // Ensure value is not null/undefined
-                              value="" // Keep Select uncontrolled for adding items
-                         >
-                           <SelectTrigger id="pastCrops" className={errors.pastCrops ? "border-red-500" : ""}>
-                             <SelectValue placeholder={selectedCrops.length >= 3 ? "Maximum 3 crops selected" : "Add a past crop..."} />
-                           </SelectTrigger>
-                           <SelectContent>
-                             {/* Add a search input inside dropdown? (Optional complex enhancement) */}
-                             {availableCrops.map((crop) => (
-                               <SelectItem key={crop} value={crop}>
-                                 {crop}
-                               </SelectItem>
-                             ))}
-                           </SelectContent>
-                         </Select>
-                         {errors.pastCrops && <p className="text-red-500 text-sm">{errors.pastCrops}</p>}
-
-                       </div>
-                   </fieldset>
-
+                  {/* --- Farm & Crop Details (remains the same) --- */}
+                  <fieldset className="grid grid-cols-1 md:grid-cols-2 gap-6 border p-4 rounded-md">
+                    <legend className="text-lg font-semibold px-2">Farm & Crop History</legend>
+                    {/* Farm Area and Unit */}
+                    <div className="space-y-2">
+                      <Label htmlFor="farmArea">Farm Area<span className="text-red-500">*</span></Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="farmArea" name="farmArea" type="number" placeholder="Area size"
+                          value={formData.farmArea} onChange={handleInputChange} required min="0" step="any"
+                          className={`flex-grow ${errors.farmArea ? "border-red-500" : ""}`}
+                        />
+                        <Select value={formData.areaUnit} onValueChange={(value) => handleSelectChange("areaUnit", value)}>
+                          <SelectTrigger id="areaUnit" className="w-[150px]">
+                            <SelectValue placeholder="Unit" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {AREA_UNITS.map((unit) => (
+                              <SelectItem key={unit.value} value={unit.value}>{unit.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      {errors.farmArea && <p className="text-red-500 text-sm">{errors.farmArea}</p>}
+                    </div>
+                    {/* Past Crops Selection */}
+                    <div className="space-y-3 md:col-span-2">
+                      <Label>3 Past Crops<span className="text-red-500">*</span></Label>
+                      <p className="text-xs text-gray-500 -mt-2">Select exactly 3 crops previously grown here.</p>
+                      <div className="flex flex-wrap gap-2 mb-3 min-h-[30px] p-2 border rounded-md bg-gray-50">
+                        {selectedCrops.length === 0 && <span className="text-sm text-gray-400 italic">No crops selected</span>}
+                        {selectedCrops.map((crop) => (
+                          <div key={crop} className="flex items-center bg-farm-secondary/20 text-farm-primary px-3 py-1 rounded-full text-sm whitespace-nowrap">
+                            {crop}
+                            <button type="button" className="ml-2 text-farm-primary/70 hover:text-red-600 focus:outline-none" onClick={() => handleRemoveCrop(crop)} aria-label={`Remove ${crop}`}>
+                              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                      <Select disabled={selectedCrops.length >= 3} onValueChange={(value) => value && handleCropSelection(value)} value="">
+                        <SelectTrigger id="pastCrops" className={errors.pastCrops ? "border-red-500" : ""}>
+                          <SelectValue placeholder={selectedCrops.length >= 3 ? "Maximum 3 crops selected" : "Add a past crop..."} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableCrops.map((crop) => (<SelectItem key={crop} value={crop}>{crop}</SelectItem>))}
+                        </SelectContent>
+                      </Select>
+                      {errors.pastCrops && <p className="text-red-500 text-sm">{errors.pastCrops}</p>}
+                    </div>
+                  </fieldset>
 
                   {/* Submit button */}
                   <Button
                     type="submit"
-                    className="w-full bg-farm-primary hover:bg-farm-dark text-lg py-3" // Larger button
+                    className="w-full bg-farm-primary hover:bg-farm-dark text-lg py-3"
                     size="lg"
-                    disabled={isLoadingAddress} // Disable submit while fetching address/location info
+                    disabled={isLoadingAddress || !isLoaded} // Also disable if map is not loaded
                   >
-                    {isLoadingAddress ? 'Finalizing Location...' : 'Generate Recommendations'}
+                    {!isLoaded ? 'Map Loading...' : isLoadingAddress ? 'Finalizing Location...' : 'Generate Recommendations'}
                   </Button>
                 </form>
               </CardContent>

@@ -1,6 +1,8 @@
+// earth-bloom-precision-agri/src/pages/Auth/SignIn.tsx
 
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+// --- CHANGE: 1. Import useLocation from react-router-dom
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,11 +15,20 @@ import { auth, provider } from "@/firebase";
 const SignIn = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  
+  // --- CHANGE: 2. Get the location object from the router
+  const location = useLocation();
+
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
     password: ""
   });
+
+  // --- CHANGE: 3. Determine the redirect path after login.
+  // If `location.state.from` exists (passed by ProtectedRoute), use its pathname.
+  // Otherwise, default to the homepage '/'.
+  const from = location.state?.from?.pathname || "/";
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -37,7 +48,12 @@ const SignIn = () => {
         title: "Signed in successfully",
         description: "Welcome back to EarthBloom!",
       });
-      navigate('/');
+
+      // --- CHANGE: 4. Navigate to the `from` path instead of always '/'
+      // The `replace: true` option replaces the `/signin` page in the browser's
+      // history, so the user can't click "back" to get to it after logging in.
+      navigate(from, { replace: true });
+
     } catch (error: any) {
       toast({
         title: "Sign in failed",
@@ -57,7 +73,10 @@ const SignIn = () => {
         title: "Signed in successfully",
         description: "Welcome back to EarthBloom!",
       });
-      navigate('/');
+
+      // --- CHANGE: 5. Also update the Google sign-in to use the dynamic `from` path
+      navigate(from, { replace: true });
+
     } catch (error: any) {
       toast({
         title: "Google sign in failed",
@@ -69,6 +88,7 @@ const SignIn = () => {
     }
   };
 
+  // The entire JSX part below remains unchanged.
   return (
     <Layout>
       <section className="py-12 bg-farm-cream">

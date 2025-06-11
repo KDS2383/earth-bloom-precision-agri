@@ -1,10 +1,15 @@
+// earth-bloom-precision-agri/src/App.tsx
 
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
+
+// --- START: Import the ProtectedRoute ---
+import { ProtectedRoute } from "./components/auth/ProtectedRoute";
+// --- END: Import the ProtectedRoute ---
 
 // Import Pages
 import Index from "./pages/Index";
@@ -26,20 +31,44 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/account" element={<Account />} />
-            <Route path="/recommendation" element={<Recommendation />} />
-            <Route path="/results" element={<Results />} />
-            <Route path="/soil-data" element={<SoilData />} />
-            <Route path="/weather" element={<Weather />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/signin" element={<SignIn />} />
-            <Route path="/signup" element={<SignUp />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
+        <Routes>
+          {/* --- Public Routes --- */}
+          <Route path="/" element={<Index />} />
+          <Route path="/soil-data" element={<SoilData />} />
+          <Route path="/weather" element={<Weather />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/signin" element={<SignIn />} />
+          <Route path="/signup" element={<SignUp />} />
+          
+          {/* --- Protected Routes --- */}
+          <Route
+            path="/account"
+            element={
+              <ProtectedRoute>
+                <Account />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/recommendation"
+            element={
+              <ProtectedRoute>
+                <Recommendation />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/results"
+            element={
+              <ProtectedRoute>
+                <Results />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* --- Not Found Route --- */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
       </TooltipProvider>
     </AuthProvider>
   </QueryClientProvider>
